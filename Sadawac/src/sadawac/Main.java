@@ -1,6 +1,7 @@
 package sadawac;
 
 import arc.Console;
+import java.awt.Color;
 
 public class Main {
 
@@ -8,6 +9,8 @@ public class Main {
     //SCREENS
     static int MAIN_MENU = 0;
     static int NAME_SELECTION = 1;
+    static int HELP = 7;
+    static int HIGHSCORES = 8;
 
     //BUTTONS
     static int MM_PLAY = 0;
@@ -17,7 +20,7 @@ public class Main {
 
     //GENERAL
     static Console con;
-    static boolean boolRunning = true;
+    static boolean boolRunning;
     static int intMouseX, intMouseY;
     static int intMouseButton;
     static char chrKey;
@@ -26,7 +29,16 @@ public class Main {
     static int[][] intButtons;
     static String[] strButtonTexts;
 
+    //COLORS
+    static Color clrGray = new Color(0, 0, 0);
+    static Color clrDarkGray = new Color(0, 0, 0);
+    static Color clrLightGray = new Color(0, 0, 0);
+
     public static void main(String[] args) {
+        //INITIALIZE SOME VARIABLES
+        intButtons[MM_PLAY][0] = 0;
+        boolRunning = true;
+
         //MAIN GAME LOOP
         while(boolRunning == true){
             //UPDATE VARIABLES
@@ -52,8 +64,24 @@ public class Main {
                         //PLAY BUTTON WAS PRESSED, CHANGE TO Name Selection Screen (1)
                         intChangeScreen = NAME_SELECTION;
                     }
+                }else if(buttonHovered(MM_HELP)){
+                    if(intMouseButton == 1){
+                        //HELP BUTTON WAS PRESSED, CHANGE TO Help Screen (7)
+                        intChangeScreen = HELP;
+                    }
+                }else if(buttonHovered(MM_HIGHSCORES)){
+                    if(intMouseButton == 1){
+                        //PLAY BUTTON WAS PRESSED, CHANGE TO HighScores Screen (8)
+                        intChangeScreen = HIGHSCORES;
+                    }
+                }else if(buttonHovered(MM_QUIT)){
+                    if(intMouseButton == 1){
+                        //QUIT BUTTON WAS PRESSED, SET boolRunning to FALSE
+                        boolRunning = false;
+                    }
                 }
             }
+            
             //REPAINT CONSOLE AND SLEEP
             con.repaint();
             con.sleep(5);
