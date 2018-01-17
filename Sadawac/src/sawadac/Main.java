@@ -1,10 +1,11 @@
 package sawadac;
 
-import arc.Console;
-import arc.TextInputFile;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
+
+import arc.Console;
+import arc.TextInputFile;
 
 public class Main {
 
@@ -32,8 +33,9 @@ public class Main {
     static int CS_LEFT = 7;
     static int CS_RIGHT = 8;
     static int CS_CONTINUE = 9;
+    static int CS_ABILITIES = 10;    
     
-    static int BUTTON_COUNT = CS_CONTINUE + 1;
+    static int BUTTON_COUNT = CS_ABILITIES + 1;
 
     //GENERAL
     static Console con;
@@ -81,6 +83,14 @@ public class Main {
     static String strCharacterName = "";
     static String[] strCharacters;
 
+    static int NAME = 0;
+    static int TYPE = 1;
+    static int DESC = 2;
+    static int ENERGY = 3;
+    static int ACTIONTYPE = 4;
+    static int ACTION = 5;
+    static int TURNS = 6;
+    
     public static void main(String[] args) {
         //INITIALIZE SOME VARIABLES AND OTHER THINGS
         con = new Console("Sadawac", 800, 600);
@@ -343,7 +353,36 @@ public class Main {
         con.setDrawFont(fntMedium);
         con.drawString(strCharacterName, 380 - (strCharacterName.length() * 5), 180);
         //DRAW CHARACTER
-        con.drawImage(imgCharacterImgs[IDLE][0], 320, 150);
+        con.drawImage(imgCharacterImgs[IDLE][0], 340, 200);
+        //DRAW INSTRUCTIONS & OTHER
+        con.setDrawFont(fntMedium);
+        con.drawString("Abilities", 340, 400);
+        con.drawString("Select your Character, each one has", 165, 60);
+        con.drawString("unique abilities", 295, 100);
+        //DRAW ABILITIES
+        for(int intCount = 0; intCount < strAbilities.length; intCount++){
+        	con.setDrawColor(getAbilityColor(intCount));
+        	con.drawString(strAbilities[intCount][NAME], 180 + (intCount * 100) +
+        			(strAbilities[Math.max(0, intCount - 1)][NAME].length() * 5), 450);
+        }
+        //DRAW ABILITY INFORMATION WHEN THEY ARE HOVERED OVER
+        if(buttonHovered(CS_ABILITIES)){
+        	con.setDrawFont(fntNormal);
+        	for(int intCountY = 0; intCountY < strAbilities.length / 2; intCountY++){
+        		for(int intCountX = 0; intCountX < strAbilities.length / 2; intCountX++){
+        			con.setDrawColor(Color.WHITE);
+        			con.fillRect(100 + (220 * intCountX), 120 + (150 * intCountY), 200, 120);
+        			con.setDrawColor(getAbilityColor(intCountX + intCountY));
+        			con.drawString(strAbilities[intCountX + intCountY][TYPE], 100 + 10 + (220 * intCountX), 150 + (150 * intCountY));
+        			con.setDrawColor(Color.BLACK);
+        			con.drawString(strAbilities[intCountX + intCountY][DESC], 100 + 10 + (220 * intCountX), 150 + 25 + (150 * intCountY));
+        			con.setDrawColor(Color.CYAN);
+        			con.drawString(strAbilities[intCountX + intCountY][ENERGY] + " Energy", 100 + 10 + (220 * intCountX), 150 + 50 + (150 * intCountY));
+        			con.setDrawColor(Color.RED);
+        			con.drawString(getAbilityActionDesc(intCountX + intCountY), 100 + 10 + (220 * intCountX), 150 + 75 + (150 * intCountY));
+            	}
+        	}
+        }
     }
     
     public static void loadCharacter(int intCharacterId){
@@ -382,18 +421,18 @@ public class Main {
                 //AND THE IDENTIFIER OF THE ATTRIBUTE INTO THE strAbilities ARRAY
                 int intAbilityId = Integer.parseInt(strLineParts[0]);
                 if(strLineParts[1].equalsIgnoreCase("Name")){
-                    strAbilities[intAbilityId][0] = strLineParts[2];
+                    strAbilities[intAbilityId][NAME] = strLineParts[2];
                 }else if(strLineParts[1].equalsIgnoreCase("Type")){
-                    strAbilities[intAbilityId][1] = strLineParts[2];
+                    strAbilities[intAbilityId][TYPE] = strLineParts[2];
                 }else if(strLineParts[1].equalsIgnoreCase("Description")){
-                    strAbilities[intAbilityId][2] = strLineParts[2];
+                    strAbilities[intAbilityId][DESC] = strLineParts[2];
                 }else if(strLineParts[1].equalsIgnoreCase("Energy")){
-                    strAbilities[intAbilityId][3] = strLineParts[2];
+                    strAbilities[intAbilityId][ENERGY] = strLineParts[2];
                 }else if(strLineParts[1].equalsIgnoreCase("Action")){
-                    strAbilities[intAbilityId][4] = strLineParts[2];
-                    strAbilities[intAbilityId][5] = strLineParts[3];
+                    strAbilities[intAbilityId][ACTIONTYPE] = strLineParts[2];
+                    strAbilities[intAbilityId][ACTION] = strLineParts[3];
                 }else if(strLineParts[1].equalsIgnoreCase("Turns")){
-                    strAbilities[intAbilityId][6] = strLineParts[2];
+                    strAbilities[intAbilityId][TURNS] = strLineParts[2];
                 }
             }
         }
@@ -401,8 +440,41 @@ public class Main {
         inputFile.close();
     }
     
+    public static String getAbilityActionDesc(int intAbilityId){
+    	String strReturn = "";
+    	String strActionType = strAbilities[intAbilityId][ACTIONTYPE]; 
+    	if(strActionType.equalsIgnoreCase("Damage")){
+    		strReturn += "Deals " + strAbilities[intAbilityId][ACTION] + " damage";
+    	}else if(strActionType.equalsIgnoreCase("DamageBoost")){
+    		strReturn += strAbilities[intAbilityId][ACTION] + "x the damage";
+    	}else if(strActionType.equalsIgnoreCase("Move")){
+    		strReturn += "Move " + strAbilities[intAbilityId][ACTION] + " tiles";
+    	}
+    	
+    	String strTurns = strAbilities[intAbilityId][TURNS];
+    	if(strTurns != null && !strTurns.isEmpty()){
+    		strReturn += " for " + strTurns + " turns";
+    	}
+    	
+    	return strReturn;
+    }
+    
+    public static Color getAbilityColor(int intAbilityId){
+    	String strAbilityType = strAbilities[intAbilityId][TYPE];
+    	if(strAbilityType.equalsIgnoreCase("Explore")){
+    		return new Color(192, 213, 182);
+    	}else if(strAbilityType.equalsIgnoreCase("Fight")){
+    		return new Color(238, 146, 157);
+    	}else if(strAbilityType.equalsIgnoreCase("Ultimate")){
+    		return new Color(244, 226, 154);
+    	}else{
+    		return Color.WHITE;
+    	}
+    }
+    
     public static boolean buttonHovered(int intButton){
-        if((intButtons[intButton][0] < intMouseX && intButtons[intButton][2] > intMouseX) &&
+        //TEST IF MOUSE IS INSIDE BUTTON
+    	if((intButtons[intButton][0] < intMouseX && intButtons[intButton][2] > intMouseX) &&
                 (intButtons[intButton][1] < intMouseY && intButtons[intButton][3] > intMouseY)){
             return true;
         }else{
@@ -537,6 +609,12 @@ public class Main {
         intButtons[CS_CONTINUE][4] = 355;
         intButtons[CS_CONTINUE][5] = 525;
         strButtonTexts[CS_CONTINUE] = "Continue";
+        
+        //ABILITIES
+        intButtons[CS_ABILITIES][0] = 150;
+        intButtons[CS_ABILITIES][1] = 400;
+        intButtons[CS_ABILITIES][2] = 670;
+        intButtons[CS_ABILITIES][3] = 480;
     }
 
 }
