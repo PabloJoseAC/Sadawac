@@ -1,6 +1,7 @@
 package sawadac;
 
 import arc.Console;
+import arc.TextInputFile;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
@@ -41,7 +42,7 @@ public class Main {
     static int intMouseButton;
     static char chrKey;
     static int intScreen = MAIN_MENU;
-    static int intChangeScreen = -1;
+    static boolean boolWaitForRelease = false;
     static int[][] intButtons;
     static String[] strButtonTexts;
     static Color[] clrButtonColors;
@@ -50,6 +51,11 @@ public class Main {
 
     //IMAGES
     static BufferedImage imgBackground;
+    static BufferedImage[][] imgCharacterImgs;
+    
+    static int IDLE = 0;
+    static int MOVE = 1;
+    static int ATTACK = 3;
     
     //COLORS
     static Color clrGray = new Color(153, 153, 153);
@@ -72,7 +78,7 @@ public class Main {
     
     //CHARACTER SELECTION
     static int intCharacter;
-    static String strCharacterName;
+    static String strCharacterName = "";
     static String[] strCharacters;
 
     public static void main(String[] args) {
@@ -100,11 +106,10 @@ public class Main {
 
             //IF YOU WANT TO SWAP SCREENS, WAIT FOR THE MOUSE BUTTON
             //TO BE RELEASED, THEN CHANGE SCREENS
-            while(intChangeScreen != -1){
+            while(boolWaitForRelease){
                 intMouseButton = con.currentMouseButton();
                 if(intMouseButton == 0){
-                    intScreen = intChangeScreen;
-                    intChangeScreen = -1;
+                    boolWaitForRelease = false;
                 }
                 con.sleep(5);
             }
@@ -139,7 +144,8 @@ public class Main {
             //CHECK IF BUTTON HAS BEEN PRESSED
             if(intMouseButton == 1){
                 //PLAY BUTTON WAS PRESSED, CHANGE TO Name Selection Screen (1)
-                intChangeScreen = USER_SELECTION;
+                intScreen = USER_SELECTION;
+                boolWaitForRelease = true;
                 clrButtonColors[MM_PLAY] = clrLightGray;
             }else{
                 clrButtonColors[MM_PLAY] = clrDarkGray;
@@ -147,7 +153,8 @@ public class Main {
         }else if(buttonHovered(MM_HELP)){
             if(intMouseButton == 1){
                 //HELP BUTTON WAS PRESSED, CHANGE TO Help Screen (7)
-                intChangeScreen = HELP;
+                intScreen = HELP;
+                boolWaitForRelease = true;
                 clrButtonColors[MM_HELP] = clrLightGray;
             }else{
                 clrButtonColors[MM_HELP] = clrDarkGray;
@@ -155,7 +162,8 @@ public class Main {
         }else if(buttonHovered(MM_HIGHSCORES)){
             if(intMouseButton == 1){
                 //PLAY BUTTON WAS PRESSED, CHANGE TO HighScores Screen (8)
-                intChangeScreen = HIGHSCORES;
+                intScreen = HIGHSCORES;
+                boolWaitForRelease = true;
                 clrButtonColors[MM_HIGHSCORES] = clrLightGray;
             }else{
                 clrButtonColors[MM_HIGHSCORES] = clrDarkGray;
@@ -197,7 +205,8 @@ public class Main {
         }else if(buttonHovered(US_BACK)){
             if(intMouseButton == 1){
                 //BACK BUTTON WAS PRESSED, CHANGE TO THE Main Menu Screen (0)
-                intChangeScreen = MAIN_MENU;
+                intScreen = MAIN_MENU;
+                boolWaitForRelease = true;
                 clrButtonColors[US_BACK] = clrLightGray;
             }else{
                 clrButtonColors[US_BACK] = clrDarkGray;
@@ -206,7 +215,8 @@ public class Main {
             if(!strName.isEmpty()){
             	if(intMouseButton == 1){
                     //CONTINUE BUTTON WAS PRESSED, CHANGE TO Character Selection Screen (2)
-                    intChangeScreen = CHARACTER_SELECTION;
+                    intScreen = CHARACTER_SELECTION;
+                    boolWaitForRelease = true;
                     clrButtonColors[US_CONTINUE] = clrLightGray;
                 }else{
                     clrButtonColors[US_CONTINUE] = clrDarkGray;
@@ -238,12 +248,12 @@ public class Main {
                 //CHECK IF THE KEY PRESSED IS THE ENTER KEY
                 }else if(chrKey == 10){
                     strName = strButtonTexts[US_NAMEINPUT];
-                	boolTyping = false;
+                    boolTyping = false;
                 //CHECK IF THE KEY PRESSED IS THE ESC KEY
                 }else if(chrKey == 27){
-                	strButtonTexts[US_NAMEINPUT] = "";
-                	strName = strButtonTexts[US_NAMEINPUT];
-                	intButtons[US_NAMEINPUT][6] = 0;
+                    strButtonTexts[US_NAMEINPUT] = "";
+                    strName = strButtonTexts[US_NAMEINPUT];
+                    intButtons[US_NAMEINPUT][6] = 0;
                     boolTyping = false;
                 }
                 //SET LAST KEY TO THIS KEY
@@ -269,19 +279,25 @@ public class Main {
     public static void characterSelection(){
     	//RESET BUTTON COLORS
     	resetButtonColors(CS_LEFT, CS_CONTINUE);
-    	
+
+        //LOAD THE CHARACTER WHEN USER FIRST ENTERS SCREEN
+        if(strCharacterName.isEmpty()){
+            loadCharacter(intCharacter);
+        }
+
     	//CHECK IF BUTTON IS BEING HOVERED OVER
         if(buttonHovered(CS_LEFT)){
             //CHECK IF BUTTON HAS BEEN PRESSED
             if(intMouseButton == 1){
                 //LEFT ARROW WAS CLICKED, CHANGE TO A DIFFERENT CHARACTER
             	if(intCharacter == 0){
-            		intCharacter = strCharacters.length - 1;
+                    intCharacter = strCharacters.length - 1;
             	}else{
-            		intCharacter--;
+                    intCharacter--;
             	}
             	loadCharacter(intCharacter);
             	clrButtonColors[CS_LEFT] = clrLightGray;
+                boolWaitForRelease = true;
             }else{
                 clrButtonColors[CS_LEFT] = clrDarkGray;
             }
@@ -290,20 +306,22 @@ public class Main {
             if(intMouseButton == 1){
                 //RIGHT ARROW WAS CLICKED, CHANGE TO A DIFFERENT CHARACTER
             	if(intCharacter == strCharacters.length - 1){
-            		intCharacter = 0;
+                    intCharacter = 0;
             	}else{
-            		intCharacter++;
+                    intCharacter++;
             	}
             	loadCharacter(intCharacter);
             	clrButtonColors[CS_RIGHT] = clrLightGray;
+                boolWaitForRelease = true;
             }else{
                 clrButtonColors[CS_RIGHT] = clrDarkGray;
             }
         }else if(buttonHovered(CS_CONTINUE)){
-        	//CHECK IF BUTTON HAS BEEN PRESSED
+            //CHECK IF BUTTON HAS BEEN PRESSED
             if(intMouseButton == 1){
                 //CONTINUE WAS CLICKED, GO TO THE Map Selection Screen (3)
-            	intChangeScreen = MAP_SELECTION;
+            	intScreen = MAP_SELECTION;
+                boolWaitForRelease = true;
             	clrButtonColors[CS_CONTINUE] = clrLightGray;
             }else{
                 clrButtonColors[CS_CONTINUE] = clrDarkGray;
@@ -321,10 +339,66 @@ public class Main {
         con.setDrawColor(Color.WHITE);
         con.fillPolygon(new int[]{155, 210, 210}, new int[]{245, 275, 215}, 3);
         con.fillPolygon(new int[]{590, 590, 645}, new int[]{215, 275, 245}, 3);
+        //DRAW CHARACTER NAME
+        con.setDrawFont(fntMedium);
+        con.drawString(strCharacterName, 380 - (strCharacterName.length() * 5), 180);
+        //DRAW CHARACTER
+        con.drawImage(imgCharacterImgs[IDLE][0], 320, 150);
     }
     
     public static void loadCharacter(int intCharacterId){
-    	
+    	//OPEN TEXT FILE WITH CHARACTER INFO
+        TextInputFile inputFile = new TextInputFile(strCharacters[intCharacterId]);
+        //INITIALIZE CHARACTER ARRAYS
+        strAbilities = new String[4][7];
+        imgCharacterImgs = new BufferedImage[3][5];
+        //READ TO END OF FILE
+        while(!inputFile.eof()){
+            //READ LINE
+            String strLine = inputFile.readLine();
+            //SPLIT LINE INTO THE DIFFERENT PARTS; THE "IDENTIFIER" AND THE "VALUE"
+            String[] strLineParts = strLine.split(":");
+            //IF THE IDENTIFIER IS 'NAME' SET strCharacterName TO ITS VALUE
+            if(strLineParts[0].equalsIgnoreCase("Name")){
+                strCharacterName = strLineParts[1];
+            }else if(strLineParts[0].equalsIgnoreCase("Images")){
+                //LOOP THROUGH THE DIFFERENT ANIMATIONS
+                for(int intCount = 1; intCount < 3; intCount++){
+                    if(strLineParts.length > intCount){
+                        //FIND WHAT THE START AND END IMAGES OF THE ANIMATION ARE
+                        String[] strImageRange = strLineParts[intCount].split("-");
+                        int intStart = Integer.parseInt(strImageRange[0]);
+                        int intEnd = Integer.parseInt(strImageRange[1]);
+                        //LOOP THROUGH THE IMAGES
+                        for(int intCount2 = intStart; intCount2 <= intEnd; intCount2++){
+                            //LOAD THE IMAGES INTO THE imgCharacterImgs ARRAY
+                            imgCharacterImgs[intCount - 1][intCount2 - intStart] = con.loadImage("src/res/Characters/" +
+                                        strCharacterName + "/" + intCount2 + ".png");
+                        }
+                    }
+                }
+            }else{
+                //LOAD THE ABILITY ATTRIBUTE BASED ON THE ABILITY ID (FIRST NUMBER)
+                //AND THE IDENTIFIER OF THE ATTRIBUTE INTO THE strAbilities ARRAY
+                int intAbilityId = Integer.parseInt(strLineParts[0]);
+                if(strLineParts[1].equalsIgnoreCase("Name")){
+                    strAbilities[intAbilityId][0] = strLineParts[2];
+                }else if(strLineParts[1].equalsIgnoreCase("Type")){
+                    strAbilities[intAbilityId][1] = strLineParts[2];
+                }else if(strLineParts[1].equalsIgnoreCase("Description")){
+                    strAbilities[intAbilityId][2] = strLineParts[2];
+                }else if(strLineParts[1].equalsIgnoreCase("Energy")){
+                    strAbilities[intAbilityId][3] = strLineParts[2];
+                }else if(strLineParts[1].equalsIgnoreCase("Action")){
+                    strAbilities[intAbilityId][4] = strLineParts[2];
+                    strAbilities[intAbilityId][5] = strLineParts[3];
+                }else if(strLineParts[1].equalsIgnoreCase("Turns")){
+                    strAbilities[intAbilityId][6] = strLineParts[2];
+                }
+            }
+        }
+        //CLOSE FILE
+        inputFile.close();
     }
     
     public static boolean buttonHovered(int intButton){
@@ -365,7 +439,8 @@ public class Main {
 
     public static void loadPaths(){
     	strCharacters = new String[]{
-    		"src/res/Characters/KillerKiara.txt"
+            "src/res/Characters/KillerKiara.txt",
+            "src/res/Characters/BobTheBuilder.txt"
     	};
     }
     
