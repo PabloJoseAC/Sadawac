@@ -17,6 +17,7 @@ public class Main {
     static int USER_SELECTION = 1;
     static int CHARACTER_SELECTION = 2;
     static int MAP_SELECTION = 3;
+    static int GAME = 4;
     static int HELP = 7;
     static int HIGHSCORES = 8;
 
@@ -33,9 +34,13 @@ public class Main {
     static int CS_LEFT = 7;
     static int CS_RIGHT = 8;
     static int CS_CONTINUE = 9;
-    static int CS_ABILITIES = 10;    
+    static int CS_ABILITIES = 10;
+
+    static int MS_LEFT = 11;
+    static int MS_RIGHT = 12;
+    static int MS_CONTINUE = 13;
     
-    static int BUTTON_COUNT = CS_ABILITIES + 1;
+    static int BUTTON_COUNT = MS_CONTINUE + 1;
 
     //GENERAL
     static Console con;
@@ -50,6 +55,9 @@ public class Main {
     static Color[] clrButtonColors;
     static String strName = "";
     static String[][] strAbilities;
+    static String[][] strMap;
+    static int[][] intEnemies;
+    static int[][] intBoosts;
 
     //IMAGES
     static BufferedImage imgBackground;
@@ -64,10 +72,14 @@ public class Main {
     static Color clrLightGray = new Color(217, 217, 217);
     static Color clrDarkGray = new Color(67, 67, 67);
     static Color clrGreen = new Color(127, 190, 83);
+    static Color clrExplore = new Color(192, 213, 182);
+    static Color clrFight = new Color(238, 146, 157);
+    static Color clrUltimate = new Color(244, 226, 154);
 
     //FONTS
     static Font fntNormal;
     static Font fntMedium;
+    static Font fntMedium2;
     static Font fntLarge;
 
     //MAIN MENU
@@ -90,6 +102,17 @@ public class Main {
     static int ACTIONTYPE = 4;
     static int ACTION = 5;
     static int TURNS = 6;
+
+    //MAP SELECTION
+    static String[] strMaps;
+    static int intMap;
+    static String strMapName = "";
+    static int intEnemyCount;
+    static int intBossCount;
+    static int intBoostCount;
+
+    //GAME
+    static int intPlayerX, intPlayerY;
     
     public static void main(String[] args) {
         //INITIALIZE SOME VARIABLES AND OTHER THINGS
@@ -97,6 +120,7 @@ public class Main {
         
         fntNormal = con.loadFont("src/res/berkshireswash-regular.ttf", 20);
         fntMedium = con.loadFont("src/res/berkshireswash-regular.ttf", 32);
+        fntMedium2 = con.loadFont("src/res/berkshireswash-regular.ttf", 45);
         fntLarge = con.loadFont("src/res/berkshireswash-regular.ttf", 85);
 
         initButtons();
@@ -135,6 +159,8 @@ public class Main {
             	userSelection();
             }else if(intScreen == CHARACTER_SELECTION){
             	characterSelection();
+            }else if(intScreen == MAP_SELECTION){
+            	mapSelection();
             }
             
             //REPAINT CONSOLE AND SLEEP
@@ -367,21 +393,185 @@ public class Main {
         }
         //DRAW ABILITY INFORMATION WHEN THEY ARE HOVERED OVER
         if(buttonHovered(CS_ABILITIES)){
-        	con.setDrawFont(fntNormal);
-        	for(int intCountY = 0; intCountY < strAbilities.length / 2; intCountY++){
-        		for(int intCountX = 0; intCountX < strAbilities.length / 2; intCountX++){
-        			con.setDrawColor(Color.WHITE);
-        			con.fillRect(100 + (220 * intCountX), 120 + (150 * intCountY), 200, 120);
-        			con.setDrawColor(getAbilityColor(intCountX + intCountY));
-        			con.drawString(strAbilities[intCountX + intCountY][TYPE], 100 + 10 + (220 * intCountX), 150 + (150 * intCountY));
-        			con.setDrawColor(Color.BLACK);
-        			con.drawString(strAbilities[intCountX + intCountY][DESC], 100 + 10 + (220 * intCountX), 150 + 25 + (150 * intCountY));
-        			con.setDrawColor(Color.CYAN);
-        			con.drawString(strAbilities[intCountX + intCountY][ENERGY] + " Energy", 100 + 10 + (220 * intCountX), 150 + 50 + (150 * intCountY));
-        			con.setDrawColor(Color.RED);
-        			con.drawString(getAbilityActionDesc(intCountX + intCountY), 100 + 10 + (220 * intCountX), 150 + 75 + (150 * intCountY));
+            con.setDrawFont(fntNormal);
+            int intCount = 0;
+            for(int intCountY = 0; intCountY < strAbilities.length / 2; intCountY++){
+                for(int intCountX = 0; intCountX < strAbilities.length / 2; intCountX++){
+                    con.setDrawColor(Color.WHITE);
+                    con.fillRect(110 + (300 * intCountX), 120 + (150 * intCountY), 280, 120);
+                    con.setDrawColor(getAbilityColor(intCount));
+                    con.drawString(strAbilities[intCount][TYPE], 110 + 10 + (300 * intCountX), 150 + (150 * intCountY));
+                    con.setDrawColor(Color.BLACK);
+                    con.drawString(strAbilities[intCount][DESC], 110 + 10 + (300 * intCountX), 150 + 25 + (150 * intCountY));
+                    con.setDrawColor(Color.CYAN);
+                    con.drawString(strAbilities[intCount][ENERGY] + " Energy", 110 + 10 + (300 * intCountX), 150 + 50 + (150 * intCountY));
+                    con.setDrawColor(Color.RED);
+                    con.drawString(getAbilityActionDesc(intCount), 110 + 10 + (300 * intCountX), 150 + 75 + (150 * intCountY));
+                    intCount++;
+                }
+            }
+        }
+    }
+
+    public static void mapSelection(){
+        //RESET BUTTON COLORS
+    	resetButtonColors(MS_LEFT, MS_CONTINUE);
+
+        //LOAD THE MAP WHEN USER FIRST ENTERS SCREEN
+        if(strMapName.isEmpty()){
+            loadMap(intMap);
+        }
+
+        //CHECK IF BUTTON IS BEING HOVERED OVER
+        if(buttonHovered(MS_LEFT)){
+            //CHECK IF BUTTON HAS BEEN PRESSED
+            if(intMouseButton == 1){
+                //LEFT ARROW WAS CLICKED, CHANGE TO A DIFFERENT CHARACTER
+            	if(intMap == 0){
+                    intMap = strMaps.length - 1;
+            	}else{
+                    intMap--;
             	}
-        	}
+            	loadMap(intMap);
+            	clrButtonColors[MS_LEFT] = clrLightGray;
+                boolWaitForRelease = true;
+            }else{
+                clrButtonColors[MS_LEFT] = clrDarkGray;
+            }
+        }else if(buttonHovered(MS_RIGHT)){
+        	//CHECK IF BUTTON HAS BEEN PRESSED
+            if(intMouseButton == 1){
+                //RIGHT ARROW WAS CLICKED, CHANGE TO A DIFFERENT CHARACTER
+            	if(intMap == strMaps.length - 1){
+                    intMap = 0;
+            	}else{
+                    intMap++;
+            	}
+            	loadMap(intMap);
+            	clrButtonColors[MS_RIGHT] = clrLightGray;
+                boolWaitForRelease = true;
+            }else{
+                clrButtonColors[MS_RIGHT] = clrDarkGray;
+            }
+        }else if(buttonHovered(MS_CONTINUE)){
+            //CHECK IF BUTTON HAS BEEN PRESSED
+            if(intMouseButton == 1){
+                //CONTINUE WAS CLICKED, GO TO THE Map Selection Screen (3)
+            	intScreen = GAME;
+                boolWaitForRelease = true;
+            	clrButtonColors[MS_CONTINUE] = clrLightGray;
+            }else{
+                clrButtonColors[MS_CONTINUE] = clrDarkGray;
+            }
+        }
+
+        //DRAW BACKGROUND
+        con.drawImage(imgBackground, 0, 0);
+        //DRAW BUTTONS
+        drawButtons(MS_LEFT, MS_CONTINUE);
+        //DRAW LEFT AND RIGHT BUTTON ARROWS
+        con.setDrawColor(Color.WHITE);
+        con.fillPolygon(new int[]{155, 210, 210}, new int[]{215, 245, 185}, 3);
+        con.fillPolygon(new int[]{590, 590, 645}, new int[]{185, 245, 215}, 3);
+        //DRAW MAP NAME
+        con.setDrawFont(fntMedium2);
+        con.drawString(strMapName, 340 - (strMapName.length() * 5), 230);
+        //DRAW INSTRUCTIONS & OTHER
+        con.setDrawFont(fntMedium);
+        con.drawString("Select the Map you'd like to play in", 165, 120);
+        //DRAW NUMBER OF ENEMIES, BOSSES, AND BOOSTS
+        con.setDrawColor(clrFight);
+        con.drawString(intEnemyCount + " Enemies", 330, 320);
+        con.setDrawColor(clrExplore);
+        con.drawString(intBoostCount + " Boosts", 330, 370);
+        con.setDrawColor(clrUltimate);
+        con.drawString(intBossCount + " Bosses", 330, 420);
+    }
+
+    public static void loadMap(int intMapId){
+        //OPEN TEXT FILE WITH CHARACTER INFO
+        TextInputFile inputFile = new TextInputFile(strMaps[intMapId]);
+        //INITIALIZE MAP VARIABLES
+        intEnemyCount = 0;
+        intBossCount = 0;
+        intBoostCount = 0;
+        strMap = new String[20][20];
+        //READ TO END OF FILE
+        int intCount = 0;
+        while(!inputFile.eof()){
+            if(intCount == 0){
+                //FIRST LINE IS MAP NAME
+                strMapName = inputFile.readLine();
+            }else{
+                //READ MAP ROW
+                String strCurrLine = inputFile.readLine();
+                for(int intCount2 = 0; intCount2 < 20; intCount2++){
+                    String strCurrTile = strCurrLine.substring(intCount2, intCount2);
+                    //KEEP COUNT OF ENEMIES, BOSSES, AND BOOSTS/COLLECTIBLES
+                    if(strCurrTile.equalsIgnoreCase("E")){
+                        intEnemyCount++;
+                    }else if(strCurrTile.equalsIgnoreCase("B")){
+                        intBossCount++;
+                    }else if(strCurrTile.equalsIgnoreCase("C")){
+                        intBoostCount++;
+                    }else if(strCurrTile.equalsIgnoreCase("S")){
+                        //SET THE PLAYER START TILE
+                        intPlayerX = intCount2;
+                        intPlayerY = intCount - 1;
+                        //SET THIS TILE TO GRASS
+                        strCurrTile = "G";
+                    }
+                    //LOAD CURRENT TILE INTO strMap ARRAY
+                    strMap[intCount - 1][intCount2] = strCurrTile;
+                }
+            }
+            intCount++;
+        }
+        //INITIALIZE intEnemies AND intBoosts ARRAYS BASED ON THE NUMBERS RECORDED
+        intEnemies = new int[intEnemyCount + intBossCount][5];
+        intBoosts = new int[intBoostCount][3];
+        //LOOP THROUGH MAP AGAIN, REPLACING ENEMIES AND ADDING THEM AND THE BOOSTS INTO THE ARRAYS
+        int intEnemyCounter = 0;
+        int intBoostCounter = 0;
+        for(int intCountY = 0; intCountY < 20; intCountY++){
+            for(int intCountX = 0; intCountX < 20; intCountX++){
+                String strCurrTile = strMap[intCountY][intCountX];
+                if(strCurrTile.equalsIgnoreCase("E")){
+                    int intType = (int) Math.round(Math.random() * 5);
+                    //1 IN 5 CHANCES FOR THE ENEMY TO BE A STRONGER ENEMY
+                    if((intType % 5) == 0){
+                        //ADD ENEMY TO intEnemies ARRAY
+                        intEnemies[intEnemyCounter] = new int[]{
+                            //X, Y, HEALTH, MAX HEALTH, TYPE
+                            intCountX, intCountY, 150, 150, 1
+                        };
+                    }else{
+                        intEnemies[intEnemyCounter] = new int[]{
+                            intCountX, intCountY, 100, 100, 0
+                        };
+                    }
+                    //SET THE CURRENT TILE TO A GRASS TILE
+                    strMap[intCountY][intCountX] = "G";
+                    intEnemyCounter++;
+                }else if(strCurrTile.equalsIgnoreCase("B")){
+                    //ADD BOSS TO intEnemies ARRAY
+                    intEnemies[intEnemyCounter] = new int[]{
+                        intCountX, intCountY, 300, 300, 2
+                    };
+                    //SET THE CURRENT TILE TO A GRASS TILE
+                    strMap[intCountY][intCountX] = "G";
+                    intEnemyCounter++;
+                }else if(strCurrTile.equalsIgnoreCase("C")){
+                    //CHOOSE A TYPE OF BOOST AT RANDOM; MORE MAX HEALTH, MORE MAX ENERGY, MORE DAMAGE
+                    int intType = (int) Math.round(Math.random() * 3);
+                    intBoosts[intBoostCounter] = new int[]{
+                        intCountX, intCountY, intType
+                    };
+                    //SET THE CURRENT TILE TO A GRASS TILE
+                    strMap[intCountY][intCountX] = "G";
+                    intBoostCounter++;
+                }
+            }
         }
     }
     
@@ -443,30 +633,33 @@ public class Main {
     public static String getAbilityActionDesc(int intAbilityId){
     	String strReturn = "";
     	String strActionType = strAbilities[intAbilityId][ACTIONTYPE]; 
-    	if(strActionType.equalsIgnoreCase("Damage")){
+    	//RETURN DESCRIPTION BASED ON THE ACTION THE ABILITY DOES
+        if(strActionType.equalsIgnoreCase("Damage")){
     		strReturn += "Deals " + strAbilities[intAbilityId][ACTION] + " damage";
     	}else if(strActionType.equalsIgnoreCase("DamageBoost")){
     		strReturn += strAbilities[intAbilityId][ACTION] + "x the damage";
     	}else if(strActionType.equalsIgnoreCase("Move")){
     		strReturn += "Move " + strAbilities[intAbilityId][ACTION] + " tiles";
     	}
-    	
+
+        //IF ABILITY LASTS MULTIPLE TURNS, SAY THAT AT THE END
     	String strTurns = strAbilities[intAbilityId][TURNS];
     	if(strTurns != null && !strTurns.isEmpty()){
     		strReturn += " for " + strTurns + " turns";
     	}
-    	
+        
     	return strReturn;
     }
     
     public static Color getAbilityColor(int intAbilityId){
-    	String strAbilityType = strAbilities[intAbilityId][TYPE];
+    	//RETURN CORRECT COLOR BASED ON ABILITY
+        String strAbilityType = strAbilities[intAbilityId][TYPE];
     	if(strAbilityType.equalsIgnoreCase("Explore")){
-    		return new Color(192, 213, 182);
+    		return clrExplore;
     	}else if(strAbilityType.equalsIgnoreCase("Fight")){
-    		return new Color(238, 146, 157);
+    		return clrFight;
     	}else if(strAbilityType.equalsIgnoreCase("Ultimate")){
-    		return new Color(244, 226, 154);
+    		return clrUltimate;
     	}else{
     		return Color.WHITE;
     	}
@@ -494,7 +687,8 @@ public class Main {
     }
     
     public static void resetButtonColors(int intStart, int intEnd){
-    	for(int intCount = intStart; intCount < intEnd + 1; intCount++){
+    	//RESETS BUTTON COLORS TO THE DEFAULT GRAY
+        for(int intCount = intStart; intCount < intEnd + 1; intCount++){
             clrButtonColors[intCount] = clrGray;
         }
     }
@@ -510,10 +704,15 @@ public class Main {
     }
 
     public static void loadPaths(){
-    	strCharacters = new String[]{
+    	//CHARACTER FILE LOCATIONS
+        strCharacters = new String[]{
             "src/res/Characters/KillerKiara.txt",
             "src/res/Characters/BobTheBuilder.txt"
     	};
+        //MAP FILE LOCATIONS
+        strMaps = new String[]{
+            "src/res/Maps/EverGreen.txt"
+        };
     }
     
     public static void initButtons(){
@@ -615,6 +814,30 @@ public class Main {
         intButtons[CS_ABILITIES][1] = 400;
         intButtons[CS_ABILITIES][2] = 670;
         intButtons[CS_ABILITIES][3] = 480;
+
+        //MAP SELECTION//
+        //LEFT
+        intButtons[MS_LEFT][0] = 140;
+        intButtons[MS_LEFT][1] = 170;
+        intButtons[MS_LEFT][2] = 230;
+        intButtons[MS_LEFT][3] = 260;
+        strButtonTexts[MS_LEFT] = "";
+
+        //RIGHT
+        intButtons[MS_RIGHT][0] = 570;
+        intButtons[MS_RIGHT][1] = 170;
+        intButtons[MS_RIGHT][2] = 660;
+        intButtons[MS_RIGHT][3] = 260;
+        strButtonTexts[MS_RIGHT] = "";
+
+        //CONTINUE
+        intButtons[MS_CONTINUE][0] = 280;
+        intButtons[MS_CONTINUE][1] = 480;
+        intButtons[MS_CONTINUE][2] = 515;
+        intButtons[MS_CONTINUE][3] = 540;
+        intButtons[MS_CONTINUE][4] = 355;
+        intButtons[MS_CONTINUE][5] = 515;
+        strButtonTexts[MS_CONTINUE] = "Continue";
     }
 
 }
