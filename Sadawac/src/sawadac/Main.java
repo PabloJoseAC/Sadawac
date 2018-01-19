@@ -18,6 +18,8 @@ public class Main {
     static int CHARACTER_SELECTION = 2;
     static int MAP_SELECTION = 3;
     static int GAME = 4;
+    static int FIGHT = 5;
+    static int GAMEOVER = 6;
     static int HELP = 7;
     static int HIGHSCORES = 8;
 
@@ -40,7 +42,9 @@ public class Main {
     static int MS_RIGHT = 12;
     static int MS_CONTINUE = 13;
     
-    static int BUTTON_COUNT = MS_CONTINUE + 1;
+    static int G_MAINMENU = 14;
+    
+    static int BUTTON_COUNT = G_MAINMENU + 1;
 
     //GENERAL
     static Console con;
@@ -58,14 +62,21 @@ public class Main {
     static String[][] strMap;
     static int[][] intEnemies;
     static int[][] intBoosts;
+    static int intFightEnemy = -1;
 
     //IMAGES
     static BufferedImage imgBackground;
     static BufferedImage[][] imgCharacterImgs;
+    static BufferedImage[] imgTiles;
+    static BufferedImage[][] imgEnemies;
     
     static int IDLE = 0;
     static int MOVE = 1;
     static int ATTACK = 3;
+    
+    static int GRASS = 0;
+    static int TREE = 1;
+    static int WATER = 2;
     
     //COLORS
     static Color clrGray = new Color(153, 153, 153);
@@ -99,8 +110,8 @@ public class Main {
     static int TYPE = 1;
     static int DESC = 2;
     static int ENERGY = 3;
-    static int ACTIONTYPE = 4;
-    static int ACTION = 5;
+    static int ACTION = 4;
+    static int ACTIONVALUE = 5;
     static int TURNS = 6;
 
     //MAP SELECTION
@@ -112,7 +123,20 @@ public class Main {
     static int intBoostCount;
 
     //GAME
+    static int intHealthPotions = 1, intEnergyPotions = 2;
+    static int intMaxHealth = 100, intMaxEnergy = 100;
+    static int intHealth = 100, intEnergy = 100;
     static int intPlayerX, intPlayerY;
+    static int intTurns;
+    static int[] intActiveAbilities;
+    static int intDamageMultiplier;
+    static int intDamageBoost;
+    static int intDamageBlock;
+    static int intSelfDamage;
+    static int intMoves = 1, intMovesLeft;
+    static boolean boolPlayerTurn = true;
+    static boolean boolUpdatePlayer = true;
+    static boolean boolMoved;
     
     public static void main(String[] args) {
         //INITIALIZE SOME VARIABLES AND OTHER THINGS
@@ -161,6 +185,8 @@ public class Main {
             	characterSelection();
             }else if(intScreen == MAP_SELECTION){
             	mapSelection();
+            }else if(intScreen == GAME){
+            	game();
             }
             
             //REPAINT CONSOLE AND SLEEP
@@ -487,7 +513,323 @@ public class Main {
         con.setDrawColor(clrUltimate);
         con.drawString(intBossCount + " Bosses", 330, 420);
     }
-
+    
+    public static void game(){
+    	//RESET BUTTON COLORS
+    	resetButtonColors(G_MAINMENU, G_MAINMENU);
+    	
+    	//CHECK IF BUTTON IS BEING HOVERED OVER
+    	if(buttonHovered(G_MAINMENU)){
+			//CHECK IF BUTTON HAS BEEN PRESSED
+			if(intMouseButton == 1){
+				//RESET SOME VARIABLES
+				reset();
+				//RETURN TO MAIN MENU
+				intScreen = MAIN_MENU;
+				boolWaitForRelease = true;
+				clrButtonColors[G_MAINMENU] = clrLightGray;
+			}else{
+				clrButtonColors[G_MAINMENU] = clrDarkGray;
+			}
+		}
+    	
+    	//CHECK IF IT IS THE PLAYER'S TURN
+    	if(boolPlayerTurn){
+    		//CHECK IF THE PLAYER IS DEAD
+    		if(intHealth <= 0){
+    			//GO TO THE Victory/Lose Screen (6)
+    			intScreen = GAMEOVER;
+    		}
+    		
+    		//CHECK IF ABILITIES AND OTHER PLAYER VARIABLES NEED TO UPDATE
+    		//THIS ONLY HAPPENS ONCE PER TURN
+    		if(boolUpdatePlayer){
+    			updatePlayer();
+    			intMovesLeft = intMoves;
+    		}
+    		
+    		if(chrKey == 119 || chrKey == 87){
+    			//W KEY WAS PRESSED, MOVE UP
+    			boolMoved = movePlayer(0, -1);
+    		}else if(chrKey == 97 || chrKey == 65){
+    			//A KEY WAS PRESSED, MOVE LEFT
+    			boolMoved = movePlayer(-1, 0);
+    		}else if(chrKey == 115 || chrKey == 83){
+    			//S KEY WAS PRESSED, MOVE DOWN
+    			boolMoved = movePlayer(0, 1);
+    		}else if(chrKey == 100 || chrKey == 68){
+    			//D KEY WAS PRESSED, MOVE RIGHT
+    			boolMoved = movePlayer(1, 0);
+    		}else if(chrKey == 114 || chrKey == 82){
+    			//R KEY WAS PRESSED, PERFORM EXPLORING ABILITY
+    			performAbility(0);
+    		}else if(chrKey == 113 || chrKey == 81){
+    			//Q KEY WAS PRESSED, APPLY A HEALTH POTION
+    			if(intHealthPotions > 0){
+    				intHealth += 30;
+        			if(intHealth > intMaxHealth){
+        				intHealth = intMaxHealth;
+        			}
+        			intHealthPotions--;
+    			}
+    		}else if(chrKey == 101 || chrKey == 69){
+    			//E KEY WAS PRESSED, APPLY A ENERGY POTION
+    			if(intEnergyPotions > 0){
+    				intEnergy += 50;
+    				if(intEnergy > intMaxEnergy){
+    					intEnergy = intMaxEnergy;
+    				}
+    				intEnergyPotions--;
+    			}
+    		}else if(chrKey == 32){
+    			//THE SPACEBAR WAS PRESSED, GO TO THE AI'S TURN
+    			boolPlayerTurn = false;
+    			boolUpdatePlayer = true;
+    			intTurns++;
+    		}
+    		
+    		//CHECK IF PLAYER MOVED
+    		if(boolMoved){
+    			//CHECK IF THE USER HAS USED ALL OF HIS/HER MOVES THIS TURN
+    			if(intMovesLeft > 0){
+    				//DECREASE MOVES BY 1 AND LET PLAYER MOVE AGAIN
+    				intMovesLeft--;
+    				boolMoved = false;
+    			}else{
+    				//GO TO THE AI'S TURN
+    				boolMoved = false;
+    				boolPlayerTurn = false;
+    				boolUpdatePlayer = true;
+    				intTurns++;
+    			}
+    		}
+    	}else{
+    		con.sleep(500);
+    		boolPlayerTurn = true;
+    	}
+    	
+    	//DRAW BACKGROUND
+    	con.setDrawColor(clrGreen);
+    	con.fillRect(0, 0, 800, 600);
+    	
+    	//DRAW TILES
+    	con.setDrawColor(Color.BLACK);
+    	int intCountX = 0, intCountY = 0;
+    	for(int intTileY = intPlayerY - 2; intTileY <= intPlayerY + 2; intTileY++){
+    		for(int intTileX = intPlayerX - 2; intTileX <= intPlayerX + 2; intTileX++){
+    			//CHECK IF COORDS ARE WITHIN MAP BOUNDS
+    			if((intTileX >= 0 && intTileX < 20) && (intTileY >= 0 && intTileY < 20)){
+    				int intTile = GRASS;
+    				//CHECK WHAT TILE IS AT THESE COORDS
+    				String strTile = strMap[intTileY][intTileX];
+    				if(strTile.equalsIgnoreCase("G")){
+    					intTile = GRASS;
+    				}else if(strTile.equalsIgnoreCase("T")){
+    					intTile = TREE;
+    				}else if(strTile.equalsIgnoreCase("W")){
+    					intTile = WATER;
+    				}
+    				//DRAW THE TILE
+    				con.drawImage(imgTiles[intTile], 100 + (120 * intCountX), 120 * intCountY);
+    				if(intTile == GRASS){
+    					con.drawRect(100 + (120 * intCountX), 120 * intCountY, 120, 120);
+    				}
+        		}
+    			intCountX++;
+        	}
+    		intCountY++;
+    		intCountX = 0;
+    	}
+    	
+    	//DRAW ENEMIES
+    	for(int intCount = 0; intCount < intEnemies.length; intCount++){
+    		int intEnemyX = intEnemies[intCount][0] - intPlayerX;
+    		int intEnemyY = intEnemies[intCount][1] - intPlayerY;
+    		//CHECK IF THE ENEMY IS IN THE PLAYER'S VIEWPORT
+    		if(Math.abs(intEnemyX) <= 2 && Math.abs(intEnemyY) <= 2){
+    			con.drawImage(imgEnemies[intEnemies[intCount][4]][0],
+    					100 + (120 * (2 + intEnemyX)), 120 * (2 + intEnemyY));
+    		}
+    	}
+    	
+    	//DRAW PLAYER CHARACTER
+    	con.drawImage(imgCharacterImgs[IDLE][0], 100 + (120 * 2), 120 * 2);
+    	
+    	//DRAW UI
+    	//DRAW BUTTON
+    	drawButtons(G_MAINMENU, G_MAINMENU);
+    	
+    	//DRAW LETTERS REPRESENTING WHERE YOU CAN MOVE
+    	if(canMove(0, -1)){
+    		con.setDrawColor(Color.WHITE);
+    		con.drawString("W", 100 + (120 * 2), 120);
+    	}
+    	
+    	if(canMove(-1, 0)){
+    		con.setDrawColor(Color.WHITE);
+    		con.drawString("A", 100 + 120, 120 * 2);
+    	}
+    	
+    	if(canMove(0, 1)){
+    		con.setDrawColor(Color.WHITE);
+    		con.drawString("S", 100 + (120 * 2), 120 * 3);
+    	}
+    	
+    	if(canMove(1, 0)){
+    		con.setDrawColor(Color.WHITE);
+    		con.drawString("D", 100 + (120 * 3), 120 * 2);
+    	}
+    	
+    	//DRAW TURNS
+    	con.setDrawFont(fntMedium);
+    	con.setDrawColor(Color.BLACK);
+    	con.drawString("Turns", 710, 550);
+    	con.drawString(intTurns + "", 730, 580);
+    }
+    
+    public static void updatePlayer(){
+    	for(int intCount = 0; intCount < intActiveAbilities.length; intCount++){
+    		if(intActiveAbilities[intCount] > 0){
+    			//REDUCE A TURN THAT THE ABILITY IS ACTIVE FOR
+    			intActiveAbilities[intCount]--;
+    		}else{
+    			//ABILITY IS NO LONGER ACTIVE, REMOVE THE ACTION GIVEN BY IT
+    			String strAction = strAbilities[intCount][ACTION];
+    			if(strAction.equalsIgnoreCase("Move")){
+        			//RESET AMOUNT OF MOVES PER TURN
+        			intMoves = 0;
+        		}else if(strAction.equalsIgnoreCase("DamageBoost")){
+        			//RESET AMOUNT OF DAMAGE MULTIPLIER
+        			intDamageMultiplier = 0;
+        		}else if(strAction.equalsIgnoreCase("DamageBlock")){
+        			//RESET AMOUNT OF DAMAGE BLOCK
+        			intDamageBlock = 0;
+        		}else if(strAction.equalsIgnoreCase("SelfDamage")){
+        			//RESET AMOUNT OF DAMAGE THE ENEMY WILL INFLICT ON ITSELF
+        			intSelfDamage = 0;
+        		}
+    		}
+    	}
+    	
+    	//GIVE THE PLAYER A BIT OF HEALTH
+    	intHealth += 5;
+		if(intHealth > intMaxHealth){
+			intHealth = intMaxHealth;
+		}
+		
+		//GIVE THE PLAYER A BIT OF ENERGY
+		intEnergy += 15;
+		if(intEnergy > intMaxEnergy){
+			intEnergy = intMaxEnergy;
+		}
+		
+		boolUpdatePlayer = false;
+    }
+    
+    public static boolean performAbility(int intAbilityId){
+    	//CHECK IF PLAYER HAS ENOUGH ENERGY TO PERFORM ABILITY
+    	int intAbilityEnergy = Integer.parseInt(strAbilities[intAbilityId][ENERGY]);
+    	if(intAbilityEnergy <= intEnergy){
+    		String strAction = strAbilities[intAbilityId][ACTION];
+    		int intActionValue = Integer.parseInt(strAbilities[intAbilityId][ACTIONVALUE]);
+    		//CHECK WHAT TYPE IS THE ABILITY
+    		if(strAction.equalsIgnoreCase("Move")){
+    			//SET AMOUNT OF MOVES PER TURN TO THE AMOUNT THE ABILITY GIVES
+    			intMoves = intActionValue;
+    		}else if(strAction.equalsIgnoreCase("Damage")){
+    			if(intFightEnemy > -1){
+    				//DEAL DAMAGE TO ENEMY CURRENTLY BEING FOUGHT
+    				intEnemies[intFightEnemy][2] -= intActionValue;
+    			}
+    		}else if(strAction.equalsIgnoreCase("DamageBoost")){
+    			//SET AMOUNT OF DAMAGE MULTIPLIER THE ABILITY GIVES
+    			intDamageMultiplier = intActionValue;
+    		}else if(strAction.equalsIgnoreCase("DamageBlock")){
+    			//SET AMOUNT OF DAMAGE BLOCK THE ABILITY GIVES
+    			intDamageBlock = intActionValue;
+    		}else if(strAction.equalsIgnoreCase("SelfDamage")){
+    			//SET AMOUNT OF DAMAGE THE ENEMY WILL INFLICT ON ITSELF THAT THE ABILITY GIVES
+    			intSelfDamage = intActionValue;
+    		}
+    		
+    		//IF THE ABILITY LASTS MULTIPLE TURNS, ADD IT TO THE intActiveAbilities ARRAY
+    		int intAbilityTurns = Integer.parseInt(strAbilities[intAbilityId][TURNS]);
+    		if(intAbilityTurns > 0){
+    			intActiveAbilities[intAbilityId] = intAbilityTurns;
+    		}
+    		
+    		//CONSUME THE ABILITY ENERGY FROM THE PLAYER'S ENERGY
+    		intEnergy -= intAbilityEnergy;
+    	}
+    	return false;
+    }
+    
+    public static boolean movePlayer(int intX, int intY){
+    	//GET TILE COORDS
+    	int intTileX = intPlayerX + intX;
+    	int intTileY = intPlayerY + intY;
+    	//CHECK IF TILE IS WITHIN MAP BOUNDS AND ISN'T A TREE
+    	if(canMove(intX, intY)){
+    		//GET TILE TYPE
+    		String strTile = strMap[intTileY][intTileX];
+    		//CHECK IF TILE IS GRASS
+    		if(strTile.equalsIgnoreCase("G")){
+    			for(int intCount = 0; intCount < intEnemies.length; intCount++){
+    				//CHECK IF ENEMY IS IN THIS TILE
+    				if(intEnemies[intCount][0] == intTileX && intEnemies[intCount][1] == intTileY){
+    					//SET intFightEnemy TO THIS ENEMY TO FIGHT IT
+    					intFightEnemy = intCount;
+    					//CHANGE TO THE FIGHT SCREEN
+    					intScreen = FIGHT;
+    				}
+    			}
+    			
+    			for(int intCount = 0; intCount < intBoosts.length; intCount++){
+    				//CHECK IF BOOST IS IN THIS TILE
+    				if(intBoosts[intCount][0] == intTileX && intBoosts[intCount][1] == intTileY){
+    					//GIVE PLAYER BOOST BASED ON THE TYPE OF BOOST IT IS
+    					int intType = intBoosts[intCount][2];
+    					if(intType == 0){
+    						intMaxHealth += 10;
+    					}else if(intType == 1){
+    						intMaxEnergy += 10;
+    					}if(intType == 2){
+    						intDamageBoost += 5;
+    					}
+    				}
+    			}
+    			
+				//MOVE PLAYER TO THIS TILE
+				intPlayerX = intTileX;
+				intPlayerY = intTileY;
+				return true;
+    		}else if(strTile.equalsIgnoreCase("W")){
+    			//KILL PLAYER
+    			intHealth = 0;
+    			
+    			//MOVE PLAYER TO THIS TILE
+    			intPlayerX = intTileX;
+				intPlayerY = intTileY;
+				return true;
+    		}
+    	}
+    	return false;
+    }
+    
+    public static boolean canMove(int intX, int intY){
+    	//GET TILE COORDS
+    	int intTileX = intPlayerX + intX;
+    	int intTileY = intPlayerY + intY;
+    	//CHECK IF TILE IS WITHIN MAP BOUNDS
+    	if((intTileX >= 0 && intTileX < 20) && (intTileY >= 0 && intTileY < 20)){
+    		//CHECK IF TILE ISN'T A TREE
+    		if(!strMap[intTileY][intTileX].equalsIgnoreCase("T")){
+    			return true;
+    		}
+    	}
+    	return false;
+    }
+    
     public static void loadMap(int intMapId){
         //OPEN TEXT FILE WITH CHARACTER INFO
         TextInputFile inputFile = new TextInputFile(strMaps[intMapId]);
@@ -506,7 +848,7 @@ public class Main {
                 //READ MAP ROW
                 String strCurrLine = inputFile.readLine();
                 for(int intCount2 = 0; intCount2 < 20; intCount2++){
-                    String strCurrTile = strCurrLine.substring(intCount2, intCount2);
+                    String strCurrTile = strCurrLine.substring(intCount2, intCount2 + 1);
                     //KEEP COUNT OF ENEMIES, BOSSES, AND BOOSTS/COLLECTIBLES
                     if(strCurrTile.equalsIgnoreCase("E")){
                         intEnemyCount++;
@@ -537,9 +879,9 @@ public class Main {
             for(int intCountX = 0; intCountX < 20; intCountX++){
                 String strCurrTile = strMap[intCountY][intCountX];
                 if(strCurrTile.equalsIgnoreCase("E")){
-                    int intType = (int) Math.round(Math.random() * 5);
+                    int intType = (int) Math.round(Math.random() * 4);
                     //1 IN 5 CHANCES FOR THE ENEMY TO BE A STRONGER ENEMY
-                    if((intType % 5) == 0){
+                    if((intType + 1) % 5 == 0){
                         //ADD ENEMY TO intEnemies ARRAY
                         intEnemies[intEnemyCounter] = new int[]{
                             //X, Y, HEALTH, MAX HEALTH, TYPE
@@ -563,7 +905,7 @@ public class Main {
                     intEnemyCounter++;
                 }else if(strCurrTile.equalsIgnoreCase("C")){
                     //CHOOSE A TYPE OF BOOST AT RANDOM; MORE MAX HEALTH, MORE MAX ENERGY, MORE DAMAGE
-                    int intType = (int) Math.round(Math.random() * 3);
+                    int intType = (int) Math.round(Math.random() * 2);
                     intBoosts[intBoostCounter] = new int[]{
                         intCountX, intCountY, intType
                     };
@@ -578,9 +920,15 @@ public class Main {
     public static void loadCharacter(int intCharacterId){
     	//OPEN TEXT FILE WITH CHARACTER INFO
         TextInputFile inputFile = new TextInputFile(strCharacters[intCharacterId]);
-        //INITIALIZE CHARACTER ARRAYS
+        
+        //INITIALIZE CHARACTER ARRAYS AND VARIABLES
         strAbilities = new String[4][7];
+        intActiveAbilities = new int[4];        
+        for(int intCount = 0; intCount < strAbilities.length; intCount++){
+        	strAbilities[intCount][TURNS] = "0";
+        }
         imgCharacterImgs = new BufferedImage[3][5];
+        
         //READ TO END OF FILE
         while(!inputFile.eof()){
             //READ LINE
@@ -619,8 +967,8 @@ public class Main {
                 }else if(strLineParts[1].equalsIgnoreCase("Energy")){
                     strAbilities[intAbilityId][ENERGY] = strLineParts[2];
                 }else if(strLineParts[1].equalsIgnoreCase("Action")){
-                    strAbilities[intAbilityId][ACTIONTYPE] = strLineParts[2];
-                    strAbilities[intAbilityId][ACTION] = strLineParts[3];
+                    strAbilities[intAbilityId][ACTION] = strLineParts[2];
+                    strAbilities[intAbilityId][ACTIONVALUE] = strLineParts[3];
                 }else if(strLineParts[1].equalsIgnoreCase("Turns")){
                     strAbilities[intAbilityId][TURNS] = strLineParts[2];
                 }
@@ -632,14 +980,14 @@ public class Main {
     
     public static String getAbilityActionDesc(int intAbilityId){
     	String strReturn = "";
-    	String strActionType = strAbilities[intAbilityId][ACTIONTYPE]; 
+    	String strActionType = strAbilities[intAbilityId][ACTION]; 
     	//RETURN DESCRIPTION BASED ON THE ACTION THE ABILITY DOES
         if(strActionType.equalsIgnoreCase("Damage")){
-    		strReturn += "Deals " + strAbilities[intAbilityId][ACTION] + " damage";
+    		strReturn += "Deals " + strAbilities[intAbilityId][ACTIONVALUE] + " damage";
     	}else if(strActionType.equalsIgnoreCase("DamageBoost")){
-    		strReturn += strAbilities[intAbilityId][ACTION] + "x the damage";
+    		strReturn += strAbilities[intAbilityId][ACTIONVALUE] + "x the damage";
     	}else if(strActionType.equalsIgnoreCase("Move")){
-    		strReturn += "Move " + strAbilities[intAbilityId][ACTION] + " tiles";
+    		strReturn += "Move " + strAbilities[intAbilityId][ACTIONVALUE] + " tiles";
     	}
 
         //IF ABILITY LASTS MULTIPLE TURNS, SAY THAT AT THE END
@@ -663,6 +1011,26 @@ public class Main {
     	}else{
     		return Color.WHITE;
     	}
+    }
+    
+    public static void reset(){
+    	strCharacterName = "";
+		strMapName = "";
+		intTurns = 0;
+		intHealth = 100;
+		intEnergy = 100;
+		intMaxHealth = 100;
+		intMaxEnergy = 100;
+		intHealthPotions = 1;
+		intEnergyPotions = 2;
+		intDamageMultiplier = 0;
+		intDamageBoost = 0;
+		intDamageBlock = 0;
+		intSelfDamage = 0;
+		intMoves = 1;
+	    boolPlayerTurn = true;
+	    boolUpdatePlayer = true;
+	    boolMoved = false;
     }
     
     public static boolean buttonHovered(int intButton){
@@ -695,12 +1063,29 @@ public class Main {
 
     public static void loadImages(){
         imgBackground = con.loadImage("src/res/Background.png");
+        //TODO: MENU TORCHES
         /*imgTorch = new BufferedImage[]{
             con.loadImage("src/res/Torch/torch0.png"),
             con.loadImage("src/res/Torch/torch1.png"),
             con.loadImage("src/res/Torch/torch2.png"),
             con.loadImage("src/res/Torch/torch3.png")
         };*/
+        imgTiles = new BufferedImage[]{
+        	con.loadImage("src/res/Tiles/Grass.png"),
+        	con.loadImage("src/res/Tiles/Tree.png"),
+        	con.loadImage("src/res/Tiles/Water.png")
+        };
+        imgEnemies = new BufferedImage[][]{
+        	new BufferedImage[]{
+        		con.loadImage("src/res/Enemies/Normal/0.png")
+        	},
+        	new BufferedImage[]{
+            	con.loadImage("src/res/Enemies/Normal/0.png")
+        	},
+        	new BufferedImage[]{
+            	con.loadImage("src/res/Enemies/Normal/0.png")
+        	}
+        };
     }
 
     public static void loadPaths(){
@@ -810,10 +1195,10 @@ public class Main {
         strButtonTexts[CS_CONTINUE] = "Continue";
         
         //ABILITIES
-        intButtons[CS_ABILITIES][0] = 150;
-        intButtons[CS_ABILITIES][1] = 400;
-        intButtons[CS_ABILITIES][2] = 670;
-        intButtons[CS_ABILITIES][3] = 480;
+        intButtons[CS_ABILITIES][0] = 170;
+        intButtons[CS_ABILITIES][1] = 420;
+        intButtons[CS_ABILITIES][2] = 650;
+        intButtons[CS_ABILITIES][3] = 460;
 
         //MAP SELECTION//
         //LEFT
@@ -838,6 +1223,16 @@ public class Main {
         intButtons[MS_CONTINUE][4] = 355;
         intButtons[MS_CONTINUE][5] = 515;
         strButtonTexts[MS_CONTINUE] = "Continue";
+        
+        //MAP SELECTION//
+        //MAIN MENU
+        intButtons[G_MAINMENU][0] = 715;
+        intButtons[G_MAINMENU][1] = 20;
+        intButtons[G_MAINMENU][2] = 780;
+        intButtons[G_MAINMENU][3] = 80;
+        intButtons[G_MAINMENU][4] = 722;
+        intButtons[G_MAINMENU][5] = 57;
+        strButtonTexts[G_MAINMENU] = "Menu";
     }
 
 }
