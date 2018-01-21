@@ -3,15 +3,15 @@ package sawadac;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
+import java.io.File;
 
 import arc.Console;
 import arc.TextInputFile;
+import arc.TextOutputFile;
 
 public class Main {
 
     ////////VARIABLES////////
-    static long longTime;
-
     //SCREENS
     static int MAIN_MENU = 0;
     static int USER_SELECTION = 1;
@@ -43,8 +43,17 @@ public class Main {
     static int MS_CONTINUE = 13;
     
     static int G_MAINMENU = 14;
+    static int G_EXPLORE = 15;
     
-    static int BUTTON_COUNT = G_MAINMENU + 1;
+    static int F_ABILITY1 = 16;
+    static int F_ABILITY2 = 17;
+    static int F_ABILITY3 = 18;
+    
+    static int H_MAINMENU = 19;
+    
+    static int HS_MAINMENU = 20;
+    
+    static int BUTTON_COUNT = HS_MAINMENU + 1;
 
     //GENERAL
     static Console con;
@@ -69,6 +78,8 @@ public class Main {
     static BufferedImage[][] imgCharacterImgs;
     static BufferedImage[] imgTiles;
     static BufferedImage[][] imgEnemies;
+    static BufferedImage[] imgUI;
+    static BufferedImage[] imgBoosts;
     
     static int IDLE = 0;
     static int MOVE = 1;
@@ -77,6 +88,21 @@ public class Main {
     static int GRASS = 0;
     static int TREE = 1;
     static int WATER = 2;
+    
+    static int W = 0;
+    static int A = 1;
+    static int S = 2;
+    static int D = 3;
+    static int REDW = 4;
+    static int REDA = 5;
+    static int REDS = 6;
+    static int REDD = 7;
+    static int R = 8;
+    static int SKIP = 9;
+    static int HEART = 10;
+    static int BOLT = 11;
+    static int HEALTHPOTION = 12;
+    static int ENERGYPOTION = 13;
     
     //COLORS
     static Color clrGray = new Color(153, 153, 153);
@@ -123,9 +149,9 @@ public class Main {
     static int intBoostCount;
 
     //GAME
-    static int intHealthPotions = 1, intEnergyPotions = 2;
-    static int intMaxHealth = 100, intMaxEnergy = 100;
-    static int intHealth = 100, intEnergy = 100;
+    static int intHealthPotions = 2, intEnergyPotions = 1;
+    static int intMaxHealth = 50, intMaxEnergy = 50;
+    static int intHealth = 50, intEnergy = 50;
     static int intPlayerX, intPlayerY;
     static int intTurns;
     static int[] intActiveAbilities;
@@ -137,6 +163,16 @@ public class Main {
     static boolean boolPlayerTurn = true;
     static boolean boolUpdatePlayer = true;
     static boolean boolMoved;
+    
+    //FIGHT
+    static boolean boolPlayerFights = true;
+    static int intSelectedButton = -1;
+    
+    //HELP
+    static BufferedImage imgHelp;
+    
+    //HIGHSCORES
+    static String[][] strHighScores;
     
     public static void main(String[] args) {
         //INITIALIZE SOME VARIABLES AND OTHER THINGS
@@ -160,7 +196,6 @@ public class Main {
             intMouseY = con.currentMouseY();
             intMouseButton = con.currentMouseButton();
             chrKey = con.currentChar();
-            longTime = System.currentTimeMillis();
 
             //IF YOU WANT TO SWAP SCREENS, WAIT FOR THE MOUSE BUTTON
             //TO BE RELEASED, THEN CHANGE SCREENS
@@ -187,6 +222,14 @@ public class Main {
             	mapSelection();
             }else if(intScreen == GAME){
             	game();
+            }else if(intScreen == FIGHT){
+            	fight();
+            }else if(intScreen == GAMEOVER){
+            	gameover();
+            }else if(intScreen == HELP){
+            	help();
+            }else if(intScreen == HIGHSCORES){
+            	highScores();
             }
             
             //REPAINT CONSOLE AND SLEEP
@@ -254,37 +297,6 @@ public class Main {
     public static void userSelection(){
     	//RESET BUTTON COLORS
     	resetButtonColors(US_NAMEINPUT, US_CONTINUE);
-    	
-    	//CHECK IF BUTTON IS BEING HOVERED OVER
-        if(buttonHovered(US_NAMEINPUT)){
-            //CHECK IF BUTTON HAS BEEN PRESSED
-            if(intMouseButton == 1){
-                //NAME INPUT WAS CLICKED ON, READ USERNAME
-            	boolTyping = true;
-            }else{
-                clrButtonColors[US_NAMEINPUT] = clrDarkGray;
-            }
-        }else if(buttonHovered(US_BACK)){
-            if(intMouseButton == 1){
-                //BACK BUTTON WAS PRESSED, CHANGE TO THE Main Menu Screen (0)
-                intScreen = MAIN_MENU;
-                boolWaitForRelease = true;
-                clrButtonColors[US_BACK] = clrLightGray;
-            }else{
-                clrButtonColors[US_BACK] = clrDarkGray;
-            }
-        }else if(buttonHovered(US_CONTINUE)){
-            if(!strName.isEmpty()){
-            	if(intMouseButton == 1){
-                    //CONTINUE BUTTON WAS PRESSED, CHANGE TO Character Selection Screen (2)
-                    intScreen = CHARACTER_SELECTION;
-                    boolWaitForRelease = true;
-                    clrButtonColors[US_CONTINUE] = clrLightGray;
-                }else{
-                    clrButtonColors[US_CONTINUE] = clrDarkGray;
-                }
-            }
-        }
         
         if(boolTyping){
         	clrButtonColors[US_NAMEINPUT] = clrLightGray;
@@ -320,6 +332,37 @@ public class Main {
                 }
                 //SET LAST KEY TO THIS KEY
                 chrLastKey = chrKey;
+            }
+        }else{
+        	//CHECK IF BUTTON IS BEING HOVERED OVER
+            if(buttonHovered(US_NAMEINPUT)){
+                //CHECK IF BUTTON HAS BEEN PRESSED
+                if(intMouseButton == 1){
+                    //NAME INPUT WAS CLICKED ON, READ USERNAME
+                	boolTyping = true;
+                }else{
+                    clrButtonColors[US_NAMEINPUT] = clrDarkGray;
+                }
+            }else if(buttonHovered(US_BACK)){
+                if(intMouseButton == 1){
+                    //BACK BUTTON WAS PRESSED, CHANGE TO THE Main Menu Screen (0)
+                    intScreen = MAIN_MENU;
+                    boolWaitForRelease = true;
+                    clrButtonColors[US_BACK] = clrLightGray;
+                }else{
+                    clrButtonColors[US_BACK] = clrDarkGray;
+                }
+            }else if(buttonHovered(US_CONTINUE)){
+                if(!strName.isEmpty()){
+                	if(intMouseButton == 1){
+                        //CONTINUE BUTTON WAS PRESSED, CHANGE TO Character Selection Screen (2)
+                        intScreen = CHARACTER_SELECTION;
+                        boolWaitForRelease = true;
+                        clrButtonColors[US_CONTINUE] = clrLightGray;
+                    }else{
+                        clrButtonColors[US_CONTINUE] = clrDarkGray;
+                    }
+                }
             }
         }
         
@@ -431,7 +474,7 @@ public class Main {
                     con.drawString(strAbilities[intCount][DESC], 110 + 10 + (300 * intCountX), 150 + 25 + (150 * intCountY));
                     con.setDrawColor(Color.CYAN);
                     con.drawString(strAbilities[intCount][ENERGY] + " Energy", 110 + 10 + (300 * intCountX), 150 + 50 + (150 * intCountY));
-                    con.setDrawColor(Color.RED);
+                    con.setDrawColor(Color.ORANGE);
                     con.drawString(getAbilityActionDesc(intCount), 110 + 10 + (300 * intCountX), 150 + 75 + (150 * intCountY));
                     intCount++;
                 }
@@ -516,7 +559,7 @@ public class Main {
     
     public static void game(){
     	//RESET BUTTON COLORS
-    	resetButtonColors(G_MAINMENU, G_MAINMENU);
+    	resetButtonColors(G_MAINMENU, G_EXPLORE);
     	
     	//CHECK IF BUTTON IS BEING HOVERED OVER
     	if(buttonHovered(G_MAINMENU)){
@@ -533,6 +576,13 @@ public class Main {
 			}
 		}
     	
+    	//CHECK IF ABILITIES AND OTHER PLAYER VARIABLES NEED TO UPDATE
+		//THIS ONLY HAPPENS ONCE PER TURN
+		if(boolUpdatePlayer){
+			updatePlayer();
+			intMovesLeft = intMoves;
+		}
+    	
     	//CHECK IF IT IS THE PLAYER'S TURN
     	if(boolPlayerTurn){
     		//CHECK IF THE PLAYER IS DEAD
@@ -541,12 +591,12 @@ public class Main {
     			intScreen = GAMEOVER;
     		}
     		
-    		//CHECK IF ABILITIES AND OTHER PLAYER VARIABLES NEED TO UPDATE
-    		//THIS ONLY HAPPENS ONCE PER TURN
-    		if(boolUpdatePlayer){
-    			updatePlayer();
-    			intMovesLeft = intMoves;
+    		//WAIT FOR USER TO RELEASE KEY
+    		while(chrLastKey != 0 && chrLastKey == chrKey){
+    			chrKey = con.currentChar();
+    			con.sleep(10);
     		}
+    		chrLastKey = chrKey;
     		
     		if(chrKey == 119 || chrKey == 87){
     			//W KEY WAS PRESSED, MOVE UP
@@ -565,7 +615,7 @@ public class Main {
     			performAbility(0);
     		}else if(chrKey == 113 || chrKey == 81){
     			//Q KEY WAS PRESSED, APPLY A HEALTH POTION
-    			if(intHealthPotions > 0){
+    			if(intHealthPotions > 0 && intHealth != intMaxHealth){
     				intHealth += 30;
         			if(intHealth > intMaxHealth){
         				intHealth = intMaxHealth;
@@ -574,8 +624,8 @@ public class Main {
     			}
     		}else if(chrKey == 101 || chrKey == 69){
     			//E KEY WAS PRESSED, APPLY A ENERGY POTION
-    			if(intEnergyPotions > 0){
-    				intEnergy += 50;
+    			if(intEnergyPotions > 0 && intEnergy != intMaxEnergy){
+    				intEnergy += 30;
     				if(intEnergy > intMaxEnergy){
     					intEnergy = intMaxEnergy;
     				}
@@ -589,7 +639,7 @@ public class Main {
     		}
     		
     		//CHECK IF PLAYER MOVED
-    		if(boolMoved){
+    		if(boolMoved){        		
     			//CHECK IF THE USER HAS USED ALL OF HIS/HER MOVES THIS TURN
     			if(intMovesLeft > 0){
     				//DECREASE MOVES BY 1 AND LET PLAYER MOVE AGAIN
@@ -604,6 +654,44 @@ public class Main {
     			}
     		}
     	}else{
+    		for(int intCount = 0; intCount < intEnemies.length; intCount++){
+    			if(intEnemies[intCount] != null){
+    				int intDistanceX = Math.abs(intEnemies[intCount][0] - intPlayerX);
+            		int intDistanceY = Math.abs(intEnemies[intCount][1] - intPlayerY);
+        			//CHECK IF ENEMY IS WITHIN 3 TILES OF PLAYER
+            		if(intDistanceX <= 3 || intDistanceY <= 3){
+        				//IF THE ENEMY IS RIGHT BESIDE THE PLAYER, TRIGGER A FIGHT
+            			if((intDistanceX == 1 && intDistanceY == 0) || (intDistanceX == 0 && intDistanceY == 1)){
+        					intFightEnemy = intCount;
+        					intScreen = FIGHT;
+        				}else{
+        					//MOVE CLOSER TO THE PLAYER
+                			if(intDistanceX >= intDistanceY){
+                				if(intEnemies[intCount][0] >= intPlayerX){
+                					if(canEnemyMove(intEnemies[intCount][0] - 1, intEnemies[intCount][1])){
+                						intEnemies[intCount][0]--;
+                					}
+                				}else{
+                					if(canEnemyMove(intEnemies[intCount][0] + 1, intEnemies[intCount][1])){
+                						intEnemies[intCount][0]++;
+                					}
+                				}
+            				}else{
+            					if(intEnemies[intCount][1] >= intPlayerY){
+            						if(canEnemyMove(intEnemies[intCount][0], intEnemies[intCount][1] - 1)){
+                						intEnemies[intCount][1]--;
+                					}
+                				}else{
+                					if(canEnemyMove(intEnemies[intCount][0], intEnemies[intCount][1] + 1)){
+                						intEnemies[intCount][1]++;
+                					}
+                				}
+            				}
+        				}
+        			}
+    			}
+    		}
+    		//GO TO THE PLAYER'S TURN
     		con.sleep(500);
     		boolPlayerTurn = true;
     	}
@@ -622,17 +710,15 @@ public class Main {
     				int intTile = GRASS;
     				//CHECK WHAT TILE IS AT THESE COORDS
     				String strTile = strMap[intTileY][intTileX];
+    				//DRAW THE TILES
     				if(strTile.equalsIgnoreCase("G")){
-    					intTile = GRASS;
-    				}else if(strTile.equalsIgnoreCase("T")){
-    					intTile = TREE;
-    				}else if(strTile.equalsIgnoreCase("W")){
-    					intTile = WATER;
-    				}
-    				//DRAW THE TILE
-    				con.drawImage(imgTiles[intTile], 100 + (120 * intCountX), 120 * intCountY);
-    				if(intTile == GRASS){
+    					con.drawImage(imgTiles[GRASS], 100 + (120 * intCountX), 120 * intCountY);
     					con.drawRect(100 + (120 * intCountX), 120 * intCountY, 120, 120);
+    				}else if(strTile.equalsIgnoreCase("T")){
+    					con.drawImage(imgTiles[GRASS], 100 + (120 * intCountX), 120 * intCountY);
+    					con.drawImage(imgTiles[TREE], 100 + (120 * intCountX), 120 * intCountY);
+    				}else if(strTile.equalsIgnoreCase("W")){
+    					con.drawImage(imgTiles[WATER], 100 + (120 * intCountX), 120 * intCountY);
     				}
         		}
     			intCountX++;
@@ -641,57 +727,512 @@ public class Main {
     		intCountX = 0;
     	}
     	
-    	//DRAW ENEMIES
-    	for(int intCount = 0; intCount < intEnemies.length; intCount++){
-    		int intEnemyX = intEnemies[intCount][0] - intPlayerX;
-    		int intEnemyY = intEnemies[intCount][1] - intPlayerY;
-    		//CHECK IF THE ENEMY IS IN THE PLAYER'S VIEWPORT
-    		if(Math.abs(intEnemyX) <= 2 && Math.abs(intEnemyY) <= 2){
-    			con.drawImage(imgEnemies[intEnemies[intCount][4]][0],
-    					100 + (120 * (2 + intEnemyX)), 120 * (2 + intEnemyY));
-    		}
-    	}
-    	
     	//DRAW PLAYER CHARACTER
     	con.drawImage(imgCharacterImgs[IDLE][0], 100 + (120 * 2), 120 * 2);
     	
     	//DRAW UI
     	//DRAW BUTTON
-    	drawButtons(G_MAINMENU, G_MAINMENU);
+    	drawButtons(G_MAINMENU, G_EXPLORE);
     	
     	//DRAW LETTERS REPRESENTING WHERE YOU CAN MOVE
     	if(canMove(0, -1)){
-    		con.setDrawColor(Color.WHITE);
-    		con.drawString("W", 100 + (120 * 2), 120);
+    		if(isEnemyInTile(intPlayerX, intPlayerY - 1)){
+    			con.drawImage(imgUI[REDW], 100 + (120 * 2), 120);
+    		}else{
+    			con.drawImage(imgUI[W], 100 + (120 * 2), 120);
+    		}
     	}
     	
     	if(canMove(-1, 0)){
-    		con.setDrawColor(Color.WHITE);
-    		con.drawString("A", 100 + 120, 120 * 2);
+    		if(isEnemyInTile(intPlayerX - 1, intPlayerY)){
+    			con.drawImage(imgUI[REDA], 100 + 120, 120 * 2);
+    		}else{
+    			con.drawImage(imgUI[A], 100 + 120, 120 * 2);
+    		}
     	}
     	
     	if(canMove(0, 1)){
-    		con.setDrawColor(Color.WHITE);
-    		con.drawString("S", 100 + (120 * 2), 120 * 3);
+    		if(isEnemyInTile(intPlayerX, intPlayerY + 1)){
+    			con.drawImage(imgUI[REDS], 100 + (120 * 2), 120 * 3);
+    		}else{
+    			con.drawImage(imgUI[S], 100 + (120 * 2), 120 * 3);
+    		}
     	}
     	
     	if(canMove(1, 0)){
-    		con.setDrawColor(Color.WHITE);
-    		con.drawString("D", 100 + (120 * 3), 120 * 2);
+    		if(isEnemyInTile(intPlayerX + 1, intPlayerY)){
+    			con.drawImage(imgUI[REDD], 100 + (120 * 3), 120 * 2);
+    		}else{
+    			con.drawImage(imgUI[D], 100 + (120 * 3), 120 * 2);
+    		}
     	}
+    	
+    	//DRAW R
+    	con.drawImage(imgUI[R], 725, 140);
+    	
+    	//DRAW HEART AND BOLT
+    	con.drawImage(imgUI[HEART], 15, 15);
+    	con.drawImage(imgUI[BOLT], 55, 15);
+    	
+    	//DRAW HEALTH AND ENERGY BARS
+    	con.setDrawColor(clrGray);
+    	con.fillRect(15, 60, 30, 285);
+    	con.fillRect(55, 60, 30, 285);
+    	
+    	con.setDrawColor(Color.RED);
+    	int intHealthSpace = (int)(285 - ((((double) intHealth) / intMaxHealth) * 285));
+    	con.fillRect(15, 60 + intHealthSpace, 30, 285 - intHealthSpace);
+    	con.setDrawColor(Color.YELLOW);
+    	int intEnergySpace = (int)(285 - ((((double) intEnergy) / intMaxEnergy) * 285));
+    	con.fillRect(55, 60 + intEnergySpace, 30, 285 - intEnergySpace);
+    	
+    	con.setDrawFont(fntNormal);
+    	con.setDrawColor(Color.BLACK);
+    	con.drawString(intHealth + "", 10, 80 + intHealthSpace);
+    	con.drawString(intEnergy + "", 50, 80 + intEnergySpace);
+    	
+    	if(intHealthSpace > 20){
+    		con.drawString(intMaxHealth + "", 10, 80);
+    	}
+    	
+    	if(intEnergySpace > 20){
+    		con.drawString(intMaxEnergy + "", 50, 80);
+    	}
+    	
+    	//DRAW POTIONS
+    	con.setDrawColor(Color.BLACK);
+    	con.setDrawFont(fntMedium);
+    	con.drawImage(imgUI[HEALTHPOTION], 20, 370);
+    	con.drawString(intHealthPotions + "", 30, 393);
+    	con.drawImage(imgUI[ENERGYPOTION], 20, 470);
+    	con.drawString(intEnergyPotions + "", 30, 493);
     	
     	//DRAW TURNS
     	con.setDrawFont(fntMedium);
     	con.setDrawColor(Color.BLACK);
     	con.drawString("Turns", 710, 550);
     	con.drawString(intTurns + "", 730, 580);
+    
+    	//DRAW BOOSTS/COLLECTIBLES
+    	for(int intCount = 0; intCount < intBoosts.length; intCount++){
+    		if(intBoosts[intCount] != null){
+    			int intBoostX = intBoosts[intCount][0] - intPlayerX;
+        		int intBoostY = intBoosts[intCount][1] - intPlayerY;
+        		//CHECK IF THE BOOST IS IN THE PLAYER'S VIEWPORT
+        		if(Math.abs(intBoostX) <= 2 && Math.abs(intBoostY) <= 2){
+        			con.drawImage(imgBoosts[intBoosts[intCount][2]],
+        					100 + (120 * (2 + intBoostX)), 120 * (2 + intBoostY));
+        		}
+    		}
+    	}
+    	
+    	//DRAW ENEMIES
+    	for(int intCount = 0; intCount < intEnemies.length; intCount++){
+    		if(intEnemies[intCount] != null){
+    			int intEnemyX = intEnemies[intCount][0] - intPlayerX;
+        		int intEnemyY = intEnemies[intCount][1] - intPlayerY;
+        		//CHECK IF THE ENEMY IS IN THE PLAYER'S VIEWPORT
+        		if(Math.abs(intEnemyX) <= 2 && Math.abs(intEnemyY) <= 2){
+        			con.drawImage(imgEnemies[intEnemies[intCount][4]][0],
+        					100 + (120 * (2 + intEnemyX)), 120 * (2 + intEnemyY));
+        		}
+    		}
+    	}
+
+    	//DRAW SKIP
+    	con.drawImage(imgUI[SKIP], 250, 555);
     }
     
+    public static void fight(){
+    	//RESET BUTTON COLORS
+    	resetButtonColors(F_ABILITY1, F_ABILITY3);
+    	
+    	//CHECK IF ABILITIES AND OTHER PLAYER VARIABLES NEED TO UPDATE
+    	//THIS ONLY HAPPENS ONCE PER TURN
+    	if(boolUpdatePlayer){
+    		updatePlayer();
+    		intMovesLeft = intMoves;
+    	}
+    	
+    	//CHECK IF IT IS THE PLAYER'S TURN TO FIGHT
+    	if(boolPlayerFights){
+    		//CHECK IF PLAYER'S DEAD
+    		if(intHealth <= 0){
+    			//GO TO THE Victory/Lose Screen (6)
+    			intScreen = GAMEOVER;
+    		}
+    		
+    		//WAIT FOR USER TO RELEASE KEY
+    		while(chrLastKey != 0 && chrLastKey == chrKey){
+    			chrKey = con.currentChar();
+    			con.sleep(10);
+    		}
+    		chrLastKey = chrKey;
+    		
+    		if(chrKey == 32){
+    			//THE SPACEBAR WAS PRESSED, GO TO THE AI'S TURN
+    			boolUpdatePlayer = true;
+    			boolPlayerFights = false;
+    		}
+    		
+    		//LOOP THROUGH BUTTONS
+        	for(int intCount = 0; intCount < 3; intCount++){
+        		//CHECK IF ABILITY CAN BE PERFORMED
+                if(Integer.parseInt(strAbilities[intCount + 1][ENERGY]) <= intEnergy){
+                	//CHECK IF BUTTON IS BEING HOVERED OVER
+                	if(buttonHovered(F_ABILITY1 + intCount)){
+                        //CHECK IF BUTTON HAS BEEN PRESSED
+                        if(intMouseButton == 1){
+                            //PERFORM THE ABILITY
+                        	boolean boolSuccess = performAbility(intCount + 1);
+                        	//AI'S TURN ONCE USER HAS PERFORMED AN ABILITY
+                        	if(boolSuccess){
+                        		boolPlayerFights = false;
+                        	}
+                        	clrButtonColors[F_ABILITY1 + intCount] = clrLightGray;
+                            boolWaitForRelease = true;
+                        }else{
+                            clrButtonColors[F_ABILITY1 + intCount] = clrDarkGray;
+                        }
+                        intSelectedButton = intCount + 1;
+                    }
+                }else{
+                	clrButtonColors[F_ABILITY1 + intCount] = clrLightGray;
+                }
+        	}
+    	}else{
+    		//AI'S TURN TO FIGHT//
+    		//CHECK IF ENEMY IS DEAD
+    		if(intEnemies[intFightEnemy][2] <= 0){
+    			//GIVE PLAYER A EITHER A HEALTH POTION, ENERGY POTION, OR MORE MAX HEALTH OR MAX ENERGY
+    			//AND GIVE MORE OF IT DEPENDING ON THE ENEMY TYPE
+    			int intRand = (int) Math.round(Math.random() * 4);
+    			if(intRand == 0 || intRand == 1){
+    				intHealthPotions += 1 * (intEnemies[intFightEnemy][4] + 1);
+    			}else if(intRand == 2){
+    				intEnergyPotions += 1 * (intEnemies[intFightEnemy][4] + 1);
+    			}else if(intRand == 3){
+    				intMaxHealth += 10 * (intEnemies[intFightEnemy][4] + 1);
+    			}else if(intRand == 4){
+    				intMaxEnergy += 10 * (intEnemies[intFightEnemy][4] + 1);
+    			}
+    			
+    			//REMOVE ENEMY FROM GAME
+    			intEnemies[intFightEnemy] = null;
+    			intFightEnemy = -1;
+    			
+    			//COUNT HOW MANY BOSSES ARE LEFT
+    			int intBosses = 0;
+    			for(int intCount = 0; intCount < intEnemies.length; intCount++){
+    				if(intEnemies[intCount] != null && intEnemies[intCount][4] == 2){
+    					intBosses++;
+    				}
+    			}
+    			
+    			//IF THERE ARE STILL BOSSES IN THE GAME, RETURN TO THE Game Screen (4)
+    			//IF NOT, GO TO THE Victory/Lose Screen (6)
+    			if(intBosses > 0){
+    				boolPlayerTurn = true;
+    				boolPlayerFights = true;
+    				intScreen = GAME;
+    			}else{
+    				intScreen = GAMEOVER;
+    			}
+    		}else{
+    			//CHOOSE A RANDOM ATTACK TO DEAL
+    			int intAttack = (int) Math.round(Math.random() * 2);
+    			//CHECK WHAT TYPE OF ENEMY IT IS
+    			if(intEnemies[intFightEnemy][4] == 0 || intEnemies[intFightEnemy][4] == 1){
+    				//IT'S A NORMAL ENEMY OR A POWERFUL ENEMY
+    				//IF IT'S A POWERFUL ENEMY, IT HAS A CHANCE OF HEALING ITSELF
+    				if(intEnemies[intFightEnemy][4] == 1){
+        				int intHeal = (int) Math.round(Math.random() * 2);
+        				//1 IN 3 CHANCES TO HEAL ITSELF
+        				if(intHeal == 0){
+        					intEnemies[intFightEnemy][2] += 5;
+        					if(intEnemies[intFightEnemy][2] > intEnemies[intFightEnemy][3]){
+        						intEnemies[intFightEnemy][2] = intEnemies[intFightEnemy][3];
+        					}
+        				}
+    				}
+    				
+    				//1 IN 3 CHANCES TO DO A HEAVY ATTACK
+    				if(intAttack == 0){
+    					//TAKE DAMAGE THAT IT NEEDS TO INFLICT TO ITSELF
+    					intEnemies[intFightEnemy][2] -= (int)(10 * ((double)intSelfDamage / 100));
+    					//DAMAGE PLAYER BASED ON BASE DAMAGE, THE DAMAGE BEING BLOCKED BY THE PLAYER,
+    					//AND THE DAMAGE THAT IS LEFT AFTER INFLICTING DAMAGE TO ITSELF
+    					intHealth -= (int)(10 * (1 - ((double)intDamageBlock / 100)) * (1 - ((double)intSelfDamage / 100)));
+    				}else{
+    					intEnemies[intFightEnemy][2] -= (int)(5 * ((double)intSelfDamage / 100));
+    					intHealth -= (int)(5 * (1 - ((double)intDamageBlock / 100)) * (1 - ((double)intSelfDamage / 100)));
+    				}
+    			}else if(intEnemies[intFightEnemy][4] == 2){
+    				//IT'S A BOSS
+    				int intUltimate = (int) Math.round(Math.random() * 4);
+    				//1 IN 5 CHANCES TO DEAL A LOT OF DAMAGE
+    				if(intUltimate == 0){
+    					intEnemies[intFightEnemy][2] -= (int)(20 * ((double)intSelfDamage / 100));
+    					intHealth -= (int)(20 * (1 - ((double)intDamageBlock / 100)) * (1 - ((double)intSelfDamage / 100)));
+    				}else{
+    					intEnemies[intFightEnemy][2] -= (int)(10 * ((double)intSelfDamage / 100));
+    					intHealth -= (int)(10 * (1 - ((double)intDamageBlock / 100)) * (1 - ((double)intSelfDamage / 100)));
+    				}
+    			}
+    			con.sleep(500);
+    		}
+    		
+    		//PLAYER'S TURN TO FIGHT
+    		boolPlayerFights = true;
+    		boolUpdatePlayer = true;
+    	}
+    	
+        //DRAW BACKGROUND
+        con.drawImage(imgBackground, 0, 0);
+        
+        //DRAW UI//
+        //DRAW BACKGROUND RECTANGLES
+        con.setDrawColor(Color.GRAY);
+        con.fillRect(35, 255, 770 - 35, 570 - 255);
+        con.setDrawColor(Color.WHITE);
+        con.fillRect(425, 335, 740 - 425, 545 - 335);
+        
+        //DRAW ABILITY INFORMATION
+        if(intSelectedButton != -1){
+        	con.setDrawFont(fntNormal);
+        	con.setDrawColor(getAbilityColor(intSelectedButton));
+        	con.drawString(strAbilities[intSelectedButton][NAME], 440, 375);
+        	con.setDrawColor(Color.BLACK);
+        	con.drawString(strAbilities[intSelectedButton][DESC], 440, 410);
+        	con.setDrawColor(Color.CYAN);
+        	con.drawString(strAbilities[intSelectedButton][ENERGY] + " Energy", 440, 445);
+        	con.setDrawColor(Color.ORANGE);
+        	con.drawString(getAbilityActionDesc(intSelectedButton), 440, 480);
+        	intSelectedButton = -1;
+        }
+        
+        //DRAW HEART AND BOLT
+        con.drawImage(imgUI[HEART], 65, 275);
+        con.drawImage(imgUI[BOLT], 105, 275);
+        
+        //DRAW HEALTH AND ENERGY BARS
+    	con.setDrawColor(clrGray);
+    	con.fillRect(65, 320, 95 - 65, 545 - 320);
+    	con.fillRect(105, 320, 135 - 105, 545 - 320);
+    	
+    	con.setDrawColor(Color.RED);
+    	int intHealthSpace = (int)((545 - 320) - ((((double) intHealth) / intMaxHealth) * (545 - 320)));
+    	con.fillRect(65, 320 + intHealthSpace, 95 - 65, 545 - intHealthSpace - 320);
+    	con.setDrawColor(Color.YELLOW);
+    	int intEnergySpace = (int)((545 - 320) - ((((double) intEnergy) / intMaxEnergy) * (545 - 320)));
+    	con.fillRect(105, 320 + intEnergySpace, 135 - 105, 545 - intEnergySpace - 320);
+    	
+    	con.setDrawFont(fntNormal);
+    	con.setDrawColor(Color.BLACK);
+    	con.drawString(intHealth + "", 75, 340 + intHealthSpace);
+    	con.drawString(intEnergy + "", 115, 340 + intEnergySpace);
+    	
+    	if(intHealthSpace > 20){
+    		con.drawString(intMaxHealth + "", 65, 340);
+    	}
+    	
+    	if(intEnergySpace > 20){
+    		con.drawString(intMaxEnergy + "", 105, 340);
+    	}
+    	
+    	//ENEMY HEALTH BAR
+    	con.setDrawColor(clrGray);
+    	con.fillRect(165, 280, 740 - 165, 310 - 280);
+    	if(intFightEnemy != -1 && intEnemies[intFightEnemy] != null){
+    		con.setDrawColor(Color.RED);
+    		int intHealthLocation = (int)((((double)intEnemies[intFightEnemy][2])
+        			/ intEnemies[intFightEnemy][3]) * (740 - 165));
+        	con.fillRect(165, 280, intHealthLocation, 310 - 280);
+        	
+        	con.setDrawFont(fntNormal);
+        	con.setDrawColor(Color.BLACK);
+        	con.drawString(intEnemies[intFightEnemy][2] + "", intHealthLocation + 165 - 30, 280 + 20);
+        	
+        	if(intHealthLocation < 740 - 165 - 20){
+        		con.drawString(intEnemies[intFightEnemy][3] + "", 740 - 30, 280 + 20);
+        	}
+    	}
+    	
+    	//DRAW ENEMY AND CHARACTER
+    	if(intFightEnemy != -1 && intEnemies[intFightEnemy] != null){
+    		con.drawImage(imgEnemies[intEnemies[intFightEnemy][4]][0], 230, 80);
+    	}
+    	con.drawImage(imgCharacterImgs[IDLE][0], 480, 80);
+    	
+    	//DRAW SKIP
+    	con.drawImage(imgUI[SKIP], 250, 20);
+        
+        //DRAW BUTTONS
+    	drawButtons(F_ABILITY1, F_ABILITY3);
+    }
+    
+    public static void gameover(){
+    	//DRAW BACKGROUND
+    	con.drawImage(imgBackground, 0, 0);
+    	
+    	con.setDrawFont(fntLarge);
+    	if(intHealth <= 0){
+    		//PLAYER LOST
+    		con.setDrawColor(clrFight);
+    		con.drawString("DEFEAT", 220, 300);
+    	}else{
+    		//PLAYER WON
+    		con.setDrawColor(clrGreen);
+    		con.drawString("VICTORY", 220, 300);
+    		
+    		//WRITE TURNS TO THE END OF 'highscores.txt' FILE
+    		TextOutputFile outputFile = new TextOutputFile("highscores.txt", true);
+    		outputFile.println(strName);
+    		outputFile.println(intTurns);
+    		//CLOSE FILE
+    		outputFile.close();
+    	}
+    	
+    	//DRAW TURNS TAKEN
+    	con.setDrawFont(fntMedium2);
+		con.setDrawColor(Color.WHITE);
+		con.drawString("Turns: " + intTurns, 320, 400);
+		
+		//REPAINT
+		con.repaint();
+		
+		//WAIT 5 SECONDS THEN RETURN TO THE Main Menu Screen (0)
+		con.sleep(5000);
+		reset();
+		intScreen = MAIN_MENU;
+    }
+    
+    public static void help(){
+    	//RESET BUTTON COLORS
+    	resetButtonColors(H_MAINMENU, H_MAINMENU);
+    	
+    	//CHECK IF BUTTON IS BEING HOVERED OVER
+    	if(buttonHovered(H_MAINMENU)){
+            //CHECK IF BUTTON HAS BEEN PRESSED
+            if(intMouseButton == 1){
+            	//GO BACK TO THE Main Menu Screen (0)
+                intScreen = MAIN_MENU;
+            	clrButtonColors[H_MAINMENU] = clrLightGray;
+                boolWaitForRelease = true;
+            }else{
+                clrButtonColors[H_MAINMENU] = clrDarkGray;
+            }
+        }
+    	
+    	//DRAW BACKGROUND
+    	con.drawImage(imgBackground, 0, 0);
+    	//DRAW HELP IMAGE
+    	con.drawImage(imgHelp, 35, 20);
+    	//DRAW MAIN MENU BUTTON
+    	drawButtons(H_MAINMENU, H_MAINMENU);
+    }
+    
+    public static void highScores(){
+    	//SET BUTTON COLORS TO DEFAULT
+        resetButtonColors(HS_MAINMENU, HS_MAINMENU);
+        
+        if(strHighScores == null){
+        	File file = new File("highscores.txt");
+        	//CHECK IF THE FILE EXISTS
+        	if(file.exists()){
+        		//READ AMOUNT OF SCORES IN THE FILE
+            	int intUserCount = 0;
+            	TextInputFile inputFile = new TextInputFile("highscores.txt");
+            	while(!inputFile.eof()){
+            		inputFile.readLine();
+            		inputFile.readLine();
+            		intUserCount++;
+            	}
+            	inputFile.close();
+            	
+            	//INITIALIZE ARRAY
+            	strHighScores = new String[intUserCount][2];
+            	
+            	//RE-READ FILE AND LOAD NAME AND SCORE INTO ARRAY
+            	intUserCount = 0;
+            	inputFile = new TextInputFile("highscores.txt");
+            	while(!inputFile.eof()){
+            		strHighScores[intUserCount][0] = inputFile.readLine();
+            		strHighScores[intUserCount][1] = inputFile.readLine();
+            		intUserCount++;
+            	}
+            	inputFile.close();
+            	
+            	//BUBBLE SORT THE ARRAY
+            	for(int intCount = 0; intCount < strHighScores.length; intCount++){
+            		for(int intCount2 = 0; intCount2 < strHighScores.length - 1 - intCount; intCount2++){
+            			int intScore = Integer.parseInt(strHighScores[intCount2][1]);
+                		int intScore2 = Integer.parseInt(strHighScores[intCount2 + 1][1]);
+                		if(intScore > intScore2){
+                			String strName = strHighScores[intCount2 + 1][0];
+                			String strScore = strHighScores[intCount2 + 1][1];
+                			strHighScores[intCount2 + 1][0] = strHighScores[intCount2][0];
+                			strHighScores[intCount2 + 1][1] = strHighScores[intCount2][1];
+                			strHighScores[intCount2][0] = strName;
+                			strHighScores[intCount2][1] = strScore;
+                		}
+            		}
+            	}
+        	}else{
+        		strHighScores = new String[0][0];
+        	}
+        }
+        
+        //CHECK IF BUTTON IS BEING HOVERED OVER
+    	if(buttonHovered(HS_MAINMENU)){
+            //CHECK IF BUTTON HAS BEEN PRESSED
+            if(intMouseButton == 1){
+            	//GO BACK TO THE Main Menu Screen (0)
+                intScreen = MAIN_MENU;
+            	clrButtonColors[HS_MAINMENU] = clrLightGray;
+                boolWaitForRelease = true;
+            }else{
+                clrButtonColors[HS_MAINMENU] = clrDarkGray;
+            }
+        }
+        
+        //DRAW BACKGROUND
+    	con.drawImage(imgBackground, 0, 0);
+    	
+    	//DRAW TITLE
+    	con.setDrawFont(fntMedium2);
+    	con.setDrawColor(Color.WHITE);
+    	con.drawString("HighScores", 285, 85);
+    	
+    	//DRAW TOP 10 PLAYERS
+    	con.setDrawFont(fntMedium);
+    	for(int intCount = 0; intCount < 10; intCount++){
+    		if(intCount < strHighScores.length){
+    			con.drawString((intCount + 1) + ". " + strHighScores[intCount][0] + " - " +
+        				strHighScores[intCount][1], 300, 140 + (35 * intCount));
+    		}else{
+    			con.drawString((intCount + 1) + ". ", 300, 140 + (35 * intCount));
+    		}
+    	}
+    	
+    	//DRAW MAIN MENU BUTTON
+    	drawButtons(HS_MAINMENU, HS_MAINMENU);
+    	
+    	//IF MAIN MENU BUTTON WAS PRESSED, ERASE strHighScores ARRAY
+    	if(intScreen == MAIN_MENU){
+    		strHighScores = null;
+    	}
+    }
+    
+    //TODO
     public static void updatePlayer(){
     	for(int intCount = 0; intCount < intActiveAbilities.length; intCount++){
     		if(intActiveAbilities[intCount] > 0){
     			//REDUCE A TURN THAT THE ABILITY IS ACTIVE FOR
     			intActiveAbilities[intCount]--;
+    			if(intActiveAbilities[intCount] == 0){
+    				updatePlayer();
+    			}
     		}else{
     			//ABILITY IS NO LONGER ACTIVE, REMOVE THE ACTION GIVEN BY IT
     			String strAction = strAbilities[intCount][ACTION];
@@ -710,15 +1251,15 @@ public class Main {
         		}
     		}
     	}
-    	
-    	//GIVE THE PLAYER A BIT OF HEALTH
-    	intHealth += 5;
-		if(intHealth > intMaxHealth){
-			intHealth = intMaxHealth;
-		}
 		
+    	//GIVE THE PLAYER A BIT OF HEALTH
+    	intHealth += 1;
+    	if(intHealth > intMaxHealth){
+    		intHealth = intMaxHealth;
+    	}
+    	
 		//GIVE THE PLAYER A BIT OF ENERGY
-		intEnergy += 15;
+		intEnergy += 5;
 		if(intEnergy > intMaxEnergy){
 			intEnergy = intMaxEnergy;
 		}
@@ -727,6 +1268,11 @@ public class Main {
     }
     
     public static boolean performAbility(int intAbilityId){
+    	//DON'T ACTIVATE THE ABILITY IF IT'S ALREADY ACTIVE
+    	if(intActiveAbilities[intAbilityId] > 0){
+    		return false;
+    	}
+    	
     	//CHECK IF PLAYER HAS ENOUGH ENERGY TO PERFORM ABILITY
     	int intAbilityEnergy = Integer.parseInt(strAbilities[intAbilityId][ENERGY]);
     	if(intAbilityEnergy <= intEnergy){
@@ -735,11 +1281,12 @@ public class Main {
     		//CHECK WHAT TYPE IS THE ABILITY
     		if(strAction.equalsIgnoreCase("Move")){
     			//SET AMOUNT OF MOVES PER TURN TO THE AMOUNT THE ABILITY GIVES
-    			intMoves = intActionValue;
+    			intMoves = intActionValue - 1;
+    			intMovesLeft = intMoves;
     		}else if(strAction.equalsIgnoreCase("Damage")){
     			if(intFightEnemy > -1){
     				//DEAL DAMAGE TO ENEMY CURRENTLY BEING FOUGHT
-    				intEnemies[intFightEnemy][2] -= intActionValue;
+    				intEnemies[intFightEnemy][2] -= (int)((intActionValue * Math.max(intDamageMultiplier, 1)) + intDamageBoost);
     			}
     		}else if(strAction.equalsIgnoreCase("DamageBoost")){
     			//SET AMOUNT OF DAMAGE MULTIPLIER THE ABILITY GIVES
@@ -760,6 +1307,8 @@ public class Main {
     		
     		//CONSUME THE ABILITY ENERGY FROM THE PLAYER'S ENERGY
     		intEnergy -= intAbilityEnergy;
+    		
+    		return true;
     	}
     	return false;
     }
@@ -775,27 +1324,33 @@ public class Main {
     		//CHECK IF TILE IS GRASS
     		if(strTile.equalsIgnoreCase("G")){
     			for(int intCount = 0; intCount < intEnemies.length; intCount++){
-    				//CHECK IF ENEMY IS IN THIS TILE
-    				if(intEnemies[intCount][0] == intTileX && intEnemies[intCount][1] == intTileY){
-    					//SET intFightEnemy TO THIS ENEMY TO FIGHT IT
-    					intFightEnemy = intCount;
-    					//CHANGE TO THE FIGHT SCREEN
-    					intScreen = FIGHT;
+    				if(intEnemies[intCount] != null){
+    					//CHECK IF ENEMY IS IN THIS TILE
+    					if(intEnemies[intCount][0] == intTileX && intEnemies[intCount][1] == intTileY){
+    						//SET intFightEnemy TO THIS ENEMY TO FIGHT IT
+    						intFightEnemy = intCount;
+    						//CHANGE TO THE FIGHT SCREEN
+    						intScreen = FIGHT;
+    					}
     				}
     			}
     			
     			for(int intCount = 0; intCount < intBoosts.length; intCount++){
-    				//CHECK IF BOOST IS IN THIS TILE
-    				if(intBoosts[intCount][0] == intTileX && intBoosts[intCount][1] == intTileY){
-    					//GIVE PLAYER BOOST BASED ON THE TYPE OF BOOST IT IS
-    					int intType = intBoosts[intCount][2];
-    					if(intType == 0){
-    						intMaxHealth += 10;
-    					}else if(intType == 1){
-    						intMaxEnergy += 10;
-    					}if(intType == 2){
-    						intDamageBoost += 5;
-    					}
+    				if(intBoosts[intCount] != null){
+    					//CHECK IF BOOST IS IN THIS TILE
+        				if(intBoosts[intCount][0] == intTileX && intBoosts[intCount][1] == intTileY){
+        					//GIVE PLAYER BOOST BASED ON THE TYPE OF BOOST IT IS
+        					int intType = intBoosts[intCount][2];
+        					if(intType == 0){
+        						intMaxHealth += 10;
+        					}else if(intType == 1){
+        						intMaxEnergy += 10;
+        					}else if(intType == 2){
+        						intDamageBoost += 10;
+        					}
+        					//REMOVE BOOST FROM GAME
+            				intBoosts[intCount] = null;
+        				}
     				}
     			}
     			
@@ -805,7 +1360,7 @@ public class Main {
 				return true;
     		}else if(strTile.equalsIgnoreCase("W")){
     			//KILL PLAYER
-    			intHealth = 0;
+    			intHealth = -50;
     			
     			//MOVE PLAYER TO THIS TILE
     			intPlayerX = intTileX;
@@ -817,7 +1372,6 @@ public class Main {
     }
     
     public static boolean canMove(int intX, int intY){
-    	//GET TILE COORDS
     	int intTileX = intPlayerX + intX;
     	int intTileY = intPlayerY + intY;
     	//CHECK IF TILE IS WITHIN MAP BOUNDS
@@ -828,6 +1382,30 @@ public class Main {
     		}
     	}
     	return false;
+    }
+    
+    public static boolean canEnemyMove(int intX, int intY){
+    	//CHECK IF TILE IS WITHIN MAP BOUNDS
+    	if((intX >= 0 && intX < 20) && (intY >= 0 && intY < 20)){
+    		//CHECK IF TILE IS GRASS
+    		if(strMap[intY][intX].equalsIgnoreCase("G")){
+    			//CHECK IF THERE'S ANOTHER ENEMY IN THAT TILE
+    			return !isEnemyInTile(intX, intY);
+    		}
+    	}
+    	return false;
+    }
+    
+    public static boolean isEnemyInTile(int intX, int intY){
+    	for(int intCount = 0; intCount < intEnemies.length; intCount++){
+    		if(intEnemies[intCount] != null){
+    			//CHECK IF THERE IS ANOTHER ENEMY IN THAT TILE
+    			if(intX == intEnemies[intCount][0] && intY == intEnemies[intCount][1]){
+    				return true;
+    			}
+    		}
+		}
+		return false;
     }
     
     public static void loadMap(int intMapId){
@@ -879,13 +1457,13 @@ public class Main {
             for(int intCountX = 0; intCountX < 20; intCountX++){
                 String strCurrTile = strMap[intCountY][intCountX];
                 if(strCurrTile.equalsIgnoreCase("E")){
-                    int intType = (int) Math.round(Math.random() * 4);
-                    //1 IN 5 CHANCES FOR THE ENEMY TO BE A STRONGER ENEMY
+                    int intType = (int) Math.round(Math.random() * 2);
+                    //1 IN 3 CHANCES FOR THE ENEMY TO BE A STRONGER ENEMY
                     if((intType + 1) % 5 == 0){
                         //ADD ENEMY TO intEnemies ARRAY
                         intEnemies[intEnemyCounter] = new int[]{
                             //X, Y, HEALTH, MAX HEALTH, TYPE
-                            intCountX, intCountY, 150, 150, 1
+                            intCountX, intCountY, 120, 120, 1
                         };
                     }else{
                         intEnemies[intEnemyCounter] = new int[]{
@@ -898,7 +1476,7 @@ public class Main {
                 }else if(strCurrTile.equalsIgnoreCase("B")){
                     //ADD BOSS TO intEnemies ARRAY
                     intEnemies[intEnemyCounter] = new int[]{
-                        intCountX, intCountY, 300, 300, 2
+                        intCountX, intCountY, 180, 180, 2
                     };
                     //SET THE CURRENT TILE TO A GRASS TILE
                     strMap[intCountY][intCountX] = "G";
@@ -976,6 +1554,16 @@ public class Main {
         }
         //CLOSE FILE
         inputFile.close();
+        
+        //UPDATE BUTTON VALUES
+        intButtons[G_EXPLORE][4] -= strAbilities[0][NAME].length() * 5;
+        strButtonTexts[G_EXPLORE] = strAbilities[0][NAME];
+        intButtons[F_ABILITY1][4] -= strAbilities[1][NAME].length() * 5;
+        strButtonTexts[F_ABILITY1] = strAbilities[1][NAME];
+        intButtons[F_ABILITY2][4] -= strAbilities[2][NAME].length() * 5;
+        strButtonTexts[F_ABILITY2] = strAbilities[2][NAME];
+        intButtons[F_ABILITY3][4] -= strAbilities[3][NAME].length() * 5;
+        strButtonTexts[F_ABILITY3] = strAbilities[3][NAME];
     }
     
     public static String getAbilityActionDesc(int intAbilityId){
@@ -992,7 +1580,7 @@ public class Main {
 
         //IF ABILITY LASTS MULTIPLE TURNS, SAY THAT AT THE END
     	String strTurns = strAbilities[intAbilityId][TURNS];
-    	if(strTurns != null && !strTurns.isEmpty()){
+    	if(strTurns != null && !strTurns.isEmpty() && !strTurns.equals("0")){
     		strReturn += " for " + strTurns + " turns";
     	}
         
@@ -1017,12 +1605,12 @@ public class Main {
     	strCharacterName = "";
 		strMapName = "";
 		intTurns = 0;
-		intHealth = 100;
-		intEnergy = 100;
-		intMaxHealth = 100;
-		intMaxEnergy = 100;
-		intHealthPotions = 1;
-		intEnergyPotions = 2;
+		intHealth = 50;
+		intEnergy = 50;
+		intMaxHealth = 50;
+		intMaxEnergy = 50;
+		intHealthPotions = 2;
+		intEnergyPotions = 1;
 		intDamageMultiplier = 0;
 		intDamageBoost = 0;
 		intDamageBlock = 0;
@@ -1062,7 +1650,8 @@ public class Main {
     }
 
     public static void loadImages(){
-        imgBackground = con.loadImage("src/res/Background.png");
+        imgBackground = con.loadImage("src/res/Other/Background.png");
+        imgHelp = con.loadImage("src/res/Other/Help.png");
         //TODO: MENU TORCHES
         /*imgTorch = new BufferedImage[]{
             con.loadImage("src/res/Torch/torch0.png"),
@@ -1080,19 +1669,39 @@ public class Main {
         		con.loadImage("src/res/Enemies/Normal/0.png")
         	},
         	new BufferedImage[]{
-            	con.loadImage("src/res/Enemies/Normal/0.png")
+            	con.loadImage("src/res/Enemies/Powerful/0.png")
         	},
         	new BufferedImage[]{
-            	con.loadImage("src/res/Enemies/Normal/0.png")
+            	con.loadImage("src/res/Enemies/Boss/0.png")
         	}
+        };
+        imgUI = new BufferedImage[]{
+        	con.loadImage("src/res/Other/W.png"),
+        	con.loadImage("src/res/Other/A.png"),
+        	con.loadImage("src/res/Other/S.png"),
+        	con.loadImage("src/res/Other/D.png"),
+        	con.loadImage("src/res/Other/REDW.png"),
+        	con.loadImage("src/res/Other/REDA.png"),
+        	con.loadImage("src/res/Other/REDS.png"),
+        	con.loadImage("src/res/Other/REDD.png"),
+        	con.loadImage("src/res/Other/R.png"),
+        	con.loadImage("src/res/Other/Skip.png"),
+        	con.loadImage("src/res/Other/Heart.png"),
+        	con.loadImage("src/res/Other/Bolt.png"),
+        	con.loadImage("src/res/Other/HealthPotion.png"),
+        	con.loadImage("src/res/Other/EnergyPotion.png")
+        };
+        imgBoosts = new BufferedImage[]{
+        	con.loadImage("src/res/Boosts/Health.png"),
+        	con.loadImage("src/res/Boosts/Energy.png"),
+        	con.loadImage("src/res/Boosts/Damage.png")
         };
     }
 
     public static void loadPaths(){
     	//CHARACTER FILE LOCATIONS
         strCharacters = new String[]{
-            "src/res/Characters/KillerKiara.txt",
-            "src/res/Characters/BobTheBuilder.txt"
+            "src/res/Characters/KillerKiara.txt"
     	};
         //MAP FILE LOCATIONS
         strMaps = new String[]{
@@ -1224,7 +1833,7 @@ public class Main {
         intButtons[MS_CONTINUE][5] = 515;
         strButtonTexts[MS_CONTINUE] = "Continue";
         
-        //MAP SELECTION//
+        //GAME//
         //MAIN MENU
         intButtons[G_MAINMENU][0] = 715;
         intButtons[G_MAINMENU][1] = 20;
@@ -1233,6 +1842,63 @@ public class Main {
         intButtons[G_MAINMENU][4] = 722;
         intButtons[G_MAINMENU][5] = 57;
         strButtonTexts[G_MAINMENU] = "Menu";
+        
+        //EXPLORE ABILITY
+        intButtons[G_EXPLORE][0] = 715;
+        intButtons[G_EXPLORE][1] = 100;
+        intButtons[G_EXPLORE][2] = 780;
+        intButtons[G_EXPLORE][3] = 155;
+        intButtons[G_EXPLORE][4] = 745;
+        intButtons[G_EXPLORE][5] = 130;
+        strButtonTexts[G_EXPLORE] = "";
+        
+        //FIGHT//
+        //ABILITY 1
+        intButtons[F_ABILITY1][0] = 165;
+        intButtons[F_ABILITY1][1] = 335;
+        intButtons[F_ABILITY1][2] = 400;
+        intButtons[F_ABILITY1][3] = 395;
+        intButtons[F_ABILITY1][4] = 280;
+        intButtons[F_ABILITY1][5] = 375;
+        strButtonTexts[F_ABILITY1] = "";
+        
+        //ABILITY 2
+        intButtons[F_ABILITY2][0] = 165;
+        intButtons[F_ABILITY2][1] = 410;
+        intButtons[F_ABILITY2][2] = 400;
+        intButtons[F_ABILITY2][3] = 470;
+        intButtons[F_ABILITY2][4] = 280;
+        intButtons[F_ABILITY2][5] = 450;
+        strButtonTexts[F_ABILITY2] = "";
+        
+        //ABILITY 3
+        intButtons[F_ABILITY3][0] = 165;
+        intButtons[F_ABILITY3][1] = 485;
+        intButtons[F_ABILITY3][2] = 400;
+        intButtons[F_ABILITY3][3] = 545;
+        intButtons[F_ABILITY3][4] = 280;
+        intButtons[F_ABILITY3][5] = 525;
+        strButtonTexts[F_ABILITY3] = "";
+        
+        //HELP//
+        //MAIN MENU
+        intButtons[H_MAINMENU][0] = 285;
+        intButtons[H_MAINMENU][1] = 520;
+        intButtons[H_MAINMENU][2] = 515;
+        intButtons[H_MAINMENU][3] = 580;
+        intButtons[H_MAINMENU][4] = 350;
+        intButtons[H_MAINMENU][5] = 560;
+        strButtonTexts[H_MAINMENU] = "Main Menu";
+        
+        //HIGHSCORES//
+        //MAIN MENU
+        intButtons[HS_MAINMENU][0] = 285;
+        intButtons[HS_MAINMENU][1] = 490;
+        intButtons[HS_MAINMENU][2] = 515;
+        intButtons[HS_MAINMENU][3] = 550;
+        intButtons[HS_MAINMENU][4] = 350;
+        intButtons[HS_MAINMENU][5] = 530;
+        strButtonTexts[HS_MAINMENU] = "Main Menu";
     }
 
 }
