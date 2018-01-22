@@ -66,7 +66,7 @@ public class Main {
     static int[][] intButtons;
     static String[] strButtonTexts;
     static Color[] clrButtonColors;
-    static String strName = "";
+    static String strUserName = "";
     static String[][] strAbilities;
     static String[][] strMap;
     static int[][] intEnemies;
@@ -321,12 +321,12 @@ public class Main {
                     intButtons[US_NAMEINPUT][6] = strButtonTexts[US_NAMEINPUT].length() * 5;
                 //CHECK IF THE KEY PRESSED IS THE ENTER KEY
                 }else if(chrKey == 10){
-                    strName = strButtonTexts[US_NAMEINPUT];
+                    strUserName = strButtonTexts[US_NAMEINPUT];
                     boolTyping = false;
                 //CHECK IF THE KEY PRESSED IS THE ESC KEY
                 }else if(chrKey == 27){
                     strButtonTexts[US_NAMEINPUT] = "";
-                    strName = strButtonTexts[US_NAMEINPUT];
+                    strUserName = strButtonTexts[US_NAMEINPUT];
                     intButtons[US_NAMEINPUT][6] = 0;
                     boolTyping = false;
                 }
@@ -353,7 +353,7 @@ public class Main {
                     clrButtonColors[US_BACK] = clrDarkGray;
                 }
             }else if(buttonHovered(US_CONTINUE)){
-                if(!strName.isEmpty()){
+                if(!strUserName.isEmpty()){
                 	if(intMouseButton == 1){
                         //CONTINUE BUTTON WAS PRESSED, CHANGE TO Character Selection Screen (2)
                         intScreen = CHARACTER_SELECTION;
@@ -367,7 +367,7 @@ public class Main {
         }
         
         //SET CONTINUE BUTTON TO LIGHT GRAY IF A NAME HASN'T BEEN SET
-        if(strName.isEmpty()){
+        if(strUserName.isEmpty()){
         	clrButtonColors[US_CONTINUE] = clrLightGray;
         }
     	
@@ -949,7 +949,7 @@ public class Main {
         				int intHeal = (int) Math.round(Math.random() * 2);
         				//1 IN 3 CHANCES TO HEAL ITSELF
         				if(intHeal == 0){
-        					intEnemies[intFightEnemy][2] += 5;
+        					intEnemies[intFightEnemy][2] += 10;
         					if(intEnemies[intFightEnemy][2] > intEnemies[intFightEnemy][3]){
         						intEnemies[intFightEnemy][2] = intEnemies[intFightEnemy][3];
         					}
@@ -1087,7 +1087,7 @@ public class Main {
     		
     		//WRITE TURNS TO THE END OF 'highscores.txt' FILE
     		TextOutputFile outputFile = new TextOutputFile("highscores.txt", true);
-    		outputFile.println(strName);
+    		outputFile.println(strUserName);
     		outputFile.println(intTurns);
     		//CLOSE FILE
     		outputFile.close();
@@ -1224,7 +1224,6 @@ public class Main {
     	}
     }
     
-    //TODO
     public static void updatePlayer(){
     	for(int intCount = 0; intCount < intActiveAbilities.length; intCount++){
     		if(intActiveAbilities[intCount] > 0){
@@ -1232,6 +1231,7 @@ public class Main {
     			intActiveAbilities[intCount]--;
     			if(intActiveAbilities[intCount] == 0){
     				updatePlayer();
+                                return;
     			}
     		}else{
     			//ABILITY IS NO LONGER ACTIVE, REMOVE THE ACTION GIVEN BY IT
@@ -1303,6 +1303,10 @@ public class Main {
     		int intAbilityTurns = Integer.parseInt(strAbilities[intAbilityId][TURNS]);
     		if(intAbilityTurns > 0){
     			intActiveAbilities[intAbilityId] = intAbilityTurns;
+                        if(strAbilities[intAbilityId][TYPE].equals("Fight") ||
+                                    strAbilities[intAbilityId][TYPE].equals("Ultimate")){
+                            intActiveAbilities[intAbilityId]++;
+                        }
     		}
     		
     		//CONSUME THE ABILITY ENERGY FROM THE PLAYER'S ENERGY
@@ -1459,7 +1463,7 @@ public class Main {
                 if(strCurrTile.equalsIgnoreCase("E")){
                     int intType = (int) Math.round(Math.random() * 2);
                     //1 IN 3 CHANCES FOR THE ENEMY TO BE A STRONGER ENEMY
-                    if((intType + 1) % 5 == 0){
+                    if((intType + 1) % 3 == 0){
                         //ADD ENEMY TO intEnemies ARRAY
                         intEnemies[intEnemyCounter] = new int[]{
                             //X, Y, HEALTH, MAX HEALTH, TYPE
@@ -1556,13 +1560,13 @@ public class Main {
         inputFile.close();
         
         //UPDATE BUTTON VALUES
-        intButtons[G_EXPLORE][4] -= strAbilities[0][NAME].length() * 5;
+        intButtons[G_EXPLORE][4] = 745 - strAbilities[0][NAME].length() * 5;
         strButtonTexts[G_EXPLORE] = strAbilities[0][NAME];
-        intButtons[F_ABILITY1][4] -= strAbilities[1][NAME].length() * 5;
+        intButtons[F_ABILITY1][4] = 280 - strAbilities[1][NAME].length() * 5;
         strButtonTexts[F_ABILITY1] = strAbilities[1][NAME];
-        intButtons[F_ABILITY2][4] -= strAbilities[2][NAME].length() * 5;
+        intButtons[F_ABILITY2][4] = 280 - strAbilities[2][NAME].length() * 5;
         strButtonTexts[F_ABILITY2] = strAbilities[2][NAME];
-        intButtons[F_ABILITY3][4] -= strAbilities[3][NAME].length() * 5;
+        intButtons[F_ABILITY3][4] = 280 - strAbilities[3][NAME].length() * 5;
         strButtonTexts[F_ABILITY3] = strAbilities[3][NAME];
     }
     
@@ -1699,14 +1703,51 @@ public class Main {
     }
 
     public static void loadPaths(){
-    	//CHARACTER FILE LOCATIONS
-        strCharacters = new String[]{
-            "src/res/Characters/KillerKiara.txt"
-    	};
-        //MAP FILE LOCATIONS
-        strMaps = new String[]{
-            "src/res/Maps/EverGreen.txt"
-        };
+    	//GET ALL FILES IN THE CHARACTERS FOLDER
+        File[] files = new File("src/res/Characters/").listFiles();
+
+        //COUNT HOW MANY CHARACTER FILES ARE IN THE FOLDER
+        int intCharacterCount = 0;
+        for(File file : files){
+            if(file.isFile() && file.getName().contains(".txt")){
+                intCharacterCount++;
+            }
+        }
+
+        //INITIALIZE strCharacters ARRAY WITH THE NUMBER OF CHARACTERS
+        strCharacters = new String[intCharacterCount];
+
+        //ADD THE PATHS OF THE CHARACTER FILES TO THE strCharacters ARRAY
+        int intCount = 0;
+        for(File file : files){
+            if(file.isFile() && file.getName().contains(".txt")){
+                strCharacters[intCount] = file.getAbsolutePath();
+                intCount++;
+            }
+        }
+
+        //GET ALL FILES IN THE MAPS FOLDER
+        files = new File("src/res/Maps/").listFiles();
+
+        //COUNT HOW MANY MAP FILES ARE IN THE FOLDER
+        int intMapCount = 0;
+        for(File file : files){
+            if(file.isFile() && file.getName().contains(".txt")){
+                intMapCount++;
+            }
+        }
+
+        //INITIALIZE strMaps ARRAY WITH THE NUMBER OF CHARACTERS
+        strMaps = new String[intMapCount];
+
+        //ADD THE PATHS OF THE MAP FILES TO THE strMaps ARRAY
+        intCount = 0;
+        for(File file : files){
+            if(file.isFile() && file.getName().contains(".txt")){
+                strMaps[intCount] = file.getAbsolutePath();
+                intCount++;
+            }
+        }
     }
     
     public static void initButtons(){
