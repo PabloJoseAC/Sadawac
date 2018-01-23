@@ -1,0 +1,24 @@
+Name:N1C00l
+Images:0-0
+0:Name:Teleport
+0:Type:Explore
+0:Description:Teleports to a place close by
+0:Action:Move:2
+0:Energy:15
+1:Name:Enforce
+1:Type:Fight
+1:Description:Hits the enemy with her baton
+1:Action:Damage:15
+1:Energy:5
+2:Name:Firewall
+2:Type:Fight
+2:Description:Activates a protective shield
+2:Action:DamageBlock:100
+2:Energy:25
+2:Turns:2
+3:Name:d33p h4ck
+3:Type:Ultimate
+3:Description:1ve G0t Y0U n0w
+3:Action:SelfDamage:100
+3:Turns:2
+3:Energy:50
